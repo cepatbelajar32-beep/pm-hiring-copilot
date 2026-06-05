@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { Avatar, StatusBadge, DirectionBadge, DecisionBadge, Spinner, EmptyState, Modal } from './Shared';
-import { createBatch, createCandidate } from '../lib/supabase';
+import { createBatch, createCandidate, deleteCandidate } from '../lib/supabase';
 import { BANK, ACTIVE_INDEX } from '../data/bank';
 
 function MetricCard({ value, label, sub, color }) {
@@ -14,8 +14,8 @@ function MetricCard({ value, label, sub, color }) {
 }
 
 function BatchModal({ onClose, onCreated }) {
-  const [name, setName]     = useState('');
-  const [loading, setLoad]  = useState(false);
+  const [name, setName]    = useState('');
+  const [loading, setLoad] = useState(false);
 
   async function handleCreate() {
     if (!name.trim()) return;
@@ -28,8 +28,7 @@ function BatchModal({ onClose, onCreated }) {
         BANK.stage3[ACTIVE_INDEX.stage3].id,
         ACTIVE_INDEX.stage4.map(i => BANK.stage4[i].id)
       );
-      onCreated();
-      onClose();
+      onCreated(); onClose();
     } catch (e) { alert('Gagal membuat batch: ' + e.message); }
     finally { setLoad(false); }
   }
@@ -42,14 +41,14 @@ function BatchModal({ onClose, onCreated }) {
           onChange={e => setName(e.target.value)}
           onKeyDown={e => e.key === 'Enter' && handleCreate()} autoFocus />
       </div>
-      <div style={{ background: '#F9FAFB', borderRadius: 10, padding: '12px 14px', marginBottom: 18, fontSize: 14, color: '#4B5563', lineHeight: 1.6 }}>
-        <strong style={{ color: '#111827' }}>UC per batch:</strong><br />
-        Stage 1: 5 UC &nbsp;·&nbsp; Stage 2: 7 UC &nbsp;·&nbsp; Stage 3: 1 tugas + refleksi &nbsp;·&nbsp; Stage 4: 7 UC
+      <div style={{ background:'#F9FAFB', borderRadius:10, padding:'12px 14px', marginBottom:18, fontSize:14, color:'#4B5563', lineHeight:1.6 }}>
+        <strong style={{ color:'#111827' }}>UC per batch:</strong><br />
+        Stage 1: 5 UC · Stage 2: 7 UC · Stage 3: 1 tugas + refleksi · Stage 4: 7 UC
       </div>
-      <div style={{ display: 'flex', gap: 10, justifyContent: 'flex-end' }}>
+      <div style={{ display:'flex', gap:10, justifyContent:'flex-end' }}>
         <button className="btn" onClick={onClose}>Batal</button>
         <button className="btn btn-primary" onClick={handleCreate} disabled={loading || !name.trim()}>
-          {loading ? <><div className="spinner" /> Membuat...</> : 'Buat Batch'}
+          {loading ? <><div className="spinner"/> Membuat...</> : 'Buat Batch'}
         </button>
       </div>
     </Modal>
@@ -68,8 +67,7 @@ function CandidateModal({ batches, onClose, onCreated }) {
     setLoad(true);
     try {
       await createCandidate(batchId, name.trim(), email.trim());
-      onCreated();
-      onClose();
+      onCreated(); onClose();
     } catch (e) { alert('Gagal menambahkan kandidat: ' + e.message); }
     finally { setLoad(false); }
   }
@@ -93,10 +91,42 @@ function CandidateModal({ batches, onClose, onCreated }) {
           onChange={e => setEmail(e.target.value)}
           onKeyDown={e => e.key === 'Enter' && handleCreate()} />
       </div>
-      <div style={{ display: 'flex', gap: 10, justifyContent: 'flex-end' }}>
+      <div style={{ display:'flex', gap:10, justifyContent:'flex-end' }}>
         <button className="btn" onClick={onClose}>Batal</button>
         <button className="btn btn-primary" onClick={handleCreate} disabled={loading || !name || !email || !batchId}>
-          {loading ? <><div className="spinner" /> Menambahkan...</> : 'Tambah Kandidat'}
+          {loading ? <><div className="spinner"/> Menambahkan...</> : 'Tambah Kandidat'}
+        </button>
+      </div>
+    </Modal>
+  );
+}
+
+// ── Konfirmasi hapus ──────────────────────────────────
+function DeleteModal({ candidate, onClose, onDeleted }) {
+  const [loading, setLoad] = useState(false);
+
+  async function handleDelete() {
+    setLoad(true);
+    try {
+      await deleteCandidate(candidate.id);
+      onDeleted();
+      onClose();
+    } catch (e) { alert('Gagal menghapus: ' + e.message); }
+    finally { setLoad(false); }
+  }
+
+  return (
+    <Modal title="Hapus Kandidat" onClose={onClose}>
+      <div style={{ background:'#FBE4E4', borderRadius:10, padding:'14px 16px', marginBottom:20, borderLeft:'4px solid #C00000' }}>
+        <div style={{ fontWeight:700, fontSize:15, color:'#C00000', marginBottom:4 }}>Tindakan ini tidak dapat dibatalkan</div>
+        <div style={{ fontSize:14, color:'#374151', lineHeight:1.6 }}>
+          Semua data <strong>{candidate.name}</strong> akan dihapus permanen — termasuk semua jawaban, evaluasi AI, skor yang sudah dikonfirmasi, dan interview script.
+        </div>
+      </div>
+      <div style={{ display:'flex', gap:10, justifyContent:'flex-end' }}>
+        <button className="btn" onClick={onClose}>Batal</button>
+        <button className="btn btn-danger" onClick={handleDelete} disabled={loading}>
+          {loading ? <><div className="spinner"/> Menghapus...</> : '🗑 Hapus Permanen'}
         </button>
       </div>
     </Modal>
@@ -104,11 +134,12 @@ function CandidateModal({ batches, onClose, onCreated }) {
 }
 
 export default function Dashboard({ batches, candidates, loading, onRefresh, onSelectCandidate }) {
-  const [showBatch, setShowBatch] = useState(false);
-  const [showCand, setShowCand]   = useState(false);
+  const [showBatch, setShowBatch]           = useState(false);
+  const [showCand, setShowCand]             = useState(false);
+  const [deleteTarget, setDeleteTarget]     = useState(null);
 
-  const hires   = candidates.filter(c => c.final_decision === 'hire').length;
-  const active  = candidates.filter(c => c.status === 'active').length;
+  const hires  = candidates.filter(c => c.final_decision === 'hire').length;
+  const active = candidates.filter(c => c.status === 'active').length;
 
   if (loading) return <Spinner text="Memuat dashboard..." />;
 
@@ -116,18 +147,18 @@ export default function Dashboard({ batches, candidates, loading, onRefresh, onS
     <div>
       {/* Metrics */}
       <div className="grid-4 mb-3">
-        <MetricCard value={batches.length}       label="Total Batch" />
-        <MetricCard value={candidates.length}    label="Total Kandidat" />
-        <MetricCard value={active}               label="Kandidat Aktif" color="#2E75B6" />
-        <MetricCard value={hires}                label="Hire" color="#548235" />
+        <MetricCard value={batches.length}    label="Total Batch" />
+        <MetricCard value={candidates.length} label="Total Kandidat" />
+        <MetricCard value={active}            label="Kandidat Aktif" color="#2E75B6" />
+        <MetricCard value={hires}             label="Hire" color="#548235" />
       </div>
 
       <div className="grid-2">
         {/* Batches */}
         <div className="card">
-          <div style={{ display: 'flex', alignItems: 'center', marginBottom: 16 }}>
-            <div className="card-title" style={{ margin: 0 }}>Batch Rekrutmen</div>
-            <button className="btn btn-sm btn-primary" style={{ marginLeft: 'auto' }}
+          <div style={{ display:'flex', alignItems:'center', marginBottom:16 }}>
+            <div className="card-title" style={{ margin:0 }}>Batch Rekrutmen</div>
+            <button className="btn btn-sm btn-primary" style={{ marginLeft:'auto' }}
               onClick={() => setShowBatch(true)}>+ Batch Baru</button>
           </div>
           {batches.length === 0
@@ -158,7 +189,9 @@ export default function Dashboard({ batches, candidates, loading, onRefresh, onS
           <div style={{ display:'flex', alignItems:'center', marginBottom:16 }}>
             <div className="card-title" style={{ margin:0 }}>Kandidat</div>
             <button className="btn btn-sm btn-primary" style={{ marginLeft:'auto' }}
-              onClick={() => batches.filter(b=>b.status==='active').length > 0 ? setShowCand(true) : alert('Buat batch aktif terlebih dahulu.')}>
+              onClick={() => batches.filter(b=>b.status==='active').length > 0
+                ? setShowCand(true)
+                : alert('Buat batch aktif terlebih dahulu.')}>
               + Kandidat
             </button>
           </div>
@@ -166,7 +199,7 @@ export default function Dashboard({ batches, candidates, loading, onRefresh, onS
             ? <EmptyState
                 icon={<path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2M9 11a4 4 0 100-8 4 4 0 000 8zM23 21v-2a4 4 0 00-3-3.87M16 3.13a4 4 0 010 7.75"/>}
                 title="Belum ada kandidat" desc="Tambahkan kandidat ke batch yang aktif" />
-            : candidates.slice(0,7).map(c => (
+            : candidates.slice(0, 7).map(c => (
               <div key={c.id} style={{ display:'flex', alignItems:'center', gap:10, padding:'10px 0', borderBottom:'1px solid #E5E7EB' }}>
                 <Avatar name={c.name} />
                 <div style={{ flex:1, minWidth:0 }}>
@@ -176,11 +209,18 @@ export default function Dashboard({ batches, candidates, loading, onRefresh, onS
                 <DirectionBadge direction={c.direction} />
                 {c.final_decision && <DecisionBadge decision={c.final_decision} />}
                 <button className="btn btn-xs btn-blue" onClick={() => onSelectCandidate(c)}>Evaluasi</button>
+                <button className="btn btn-xs btn-danger" onClick={() => setDeleteTarget(c)} title="Hapus kandidat"
+                  style={{ padding:'4px 8px' }}>
+                  <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                    <polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 01-2 2H8a2 2 0 01-2-2L5 6"/>
+                    <path d="M10 11v6M14 11v6M9 6V4h6v2"/>
+                  </svg>
+                </button>
               </div>
             ))}
           {candidates.length > 7 && (
             <div style={{ textAlign:'center', paddingTop:12, fontSize:13, color:'#9CA3AF' }}>
-              +{candidates.length - 7} kandidat lainnya
+              +{candidates.length - 7} kandidat lainnya · lihat di tabel bawah
             </div>
           )}
         </div>
@@ -215,8 +255,19 @@ export default function Dashboard({ batches, candidates, loading, onRefresh, onS
                       <td style={{ fontSize:14 }}>{batch?.name || '—'}</td>
                       <td><span className={`badge-s${c.current_stage}`}>Stage {c.current_stage}</span></td>
                       <td><DirectionBadge direction={c.direction} /></td>
-                      <td>{c.final_decision ? <DecisionBadge decision={c.final_decision}/> : <span style={{color:'#D1D5DB'}}>—</span>}</td>
-                      <td><button className="btn btn-xs btn-blue" onClick={() => onSelectCandidate(c)}>Evaluasi</button></td>
+                      <td>{c.final_decision
+                        ? <DecisionBadge decision={c.final_decision}/>
+                        : <span style={{ color:'#D1D5DB' }}>—</span>}
+                      </td>
+                      <td>
+                        <div style={{ display:'flex', gap:6 }}>
+                          <button className="btn btn-xs btn-blue" onClick={() => onSelectCandidate(c)}>Evaluasi</button>
+                          <button className="btn btn-xs btn-danger" onClick={() => setDeleteTarget(c)}
+                            style={{ padding:'4px 10px' }}>
+                            Hapus
+                          </button>
+                        </div>
+                      </td>
                     </tr>
                   );
                 })}
@@ -228,6 +279,13 @@ export default function Dashboard({ batches, candidates, loading, onRefresh, onS
 
       {showBatch && <BatchModal onClose={() => setShowBatch(false)} onCreated={onRefresh} />}
       {showCand  && <CandidateModal batches={batches} onClose={() => setShowCand(false)} onCreated={onRefresh} />}
+      {deleteTarget && (
+        <DeleteModal
+          candidate={deleteTarget}
+          onClose={() => setDeleteTarget(null)}
+          onDeleted={onRefresh}
+        />
+      )}
     </div>
   );
 }

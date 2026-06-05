@@ -196,3 +196,15 @@ export async function addCalibrationEntry(batchId, ucId, candidateRef, controver
   });
   if (error) throw error;
 }
+
+// ── DELETE CANDIDATE (cascade) ────────────────────────
+export async function deleteCandidate(candidateId) {
+  // Hapus semua data terkait dulu, baru kandidatnya
+  await supabase.from('calibration_log').delete().eq('candidate_id', candidateId);
+  await supabase.from('candidate_profiles').delete().eq('candidate_id', candidateId);
+  await supabase.from('interview_scripts').delete().eq('candidate_id', candidateId);
+  await supabase.from('evaluations').delete().eq('candidate_id', candidateId);
+  await supabase.from('answers').delete().eq('candidate_id', candidateId);
+  const { error } = await supabase.from('candidates').delete().eq('id', candidateId);
+  if (error) throw error;
+}

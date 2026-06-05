@@ -270,7 +270,7 @@ export default function Evaluasi({ candidate, candidates, onSelectCandidate, onB
 
   const stageUCs      = getActiveUCs(activeStage);
   const confirmedCount = evals.filter(e => e.is_confirmed && e.stage === activeStage).length;
-  const stages        = ['Aplikasi', 'SJT', 'Case Study', 'Panel'];
+
 
   return (
     <div>
@@ -287,32 +287,19 @@ export default function Evaluasi({ candidate, candidates, onSelectCandidate, onB
         </div>
       </div>
 
-      {/* Stepper */}
-      <div className="stepper">
-        {stages.map((label, i) => {
-          const s = i + 1;
-          const state = candidate.current_stage === s ? 'active' : candidate.current_stage > s ? 'done' : '';
-          return (
-            <React.Fragment key={s}>
-              {i > 0 && <div className={`step-line ${candidate.current_stage > i ? 'done' : ''}`} />}
-              <div className={`step ${state}`}>
-                <div className="step-circle">
-                  {candidate.current_stage > s
-                    ? <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3"><path d="M20 6L9 17l-5-5"/></svg>
-                    : s}
-                </div>
-                <div className="step-label">{label}</div>
-              </div>
-            </React.Fragment>
-          );
-        })}
-      </div>
 
-      {/* Stage tabs */}
+
+      {/* Stage tabs — navigasi utama */}
       <div className="tabs">
-        {[1,2,3,4].map(s => (
+        {[
+          { s:1, label:'Stage 1 — Aplikasi' },
+          { s:2, label:'Stage 2 — SJT' },
+          { s:3, label:'Stage 3 — Case Study' },
+          { s:4, label:'Stage 4 — Panel' },
+        ].map(({ s, label }) => (
           <button key={s} className={`tab-btn ${activeStage===s?'active':''}`} onClick={() => setStage(s)}>
-            Stage {s} {s === candidate.current_stage && '●'}
+            {label}
+            {s === candidate.current_stage && <span style={{ marginLeft:5, color:'#2E75B6', fontSize:10 }}>●</span>}
           </button>
         ))}
       </div>
