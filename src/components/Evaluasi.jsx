@@ -4,29 +4,48 @@ import { getAnswers, getEvaluations, saveAnswer, saveEvaluation, confirmEvaluati
 import { evaluateAnswer, generateInterviewScript } from '../lib/claude';
 import { getActiveUCs, BANK } from '../data/bank';
 
+// ── saveDraft ke supabase (update final_score + note tanpa konfirmasi) ──
+async function saveDraftToDB(candidateId, ucId, score, note) {
+  const { supabase } = await import('../lib/supabase');
+  const { error } = await supabase.from('evaluations').update({
+    final_score: score,
+    reviewer_note: note,
+  }).eq('candidate_id', candidateId).eq('uc_id', ucId);
+  if (error) throw error;
+}
+
 // ── UCCard ────────────────────────────────────────────
 function UCCard({ uc, stage, candidateId, existingAnswer, existingEval, onEvalSaved }) {
   const [answer, setAnswer]           = useState('');
   const [aiDraft, setAiDraft]         = useState(null);
   const [loading, setLoading]         = useState(false);
   const [confirming, setConfirming]   = useState(false);
-  // overrideScore selalu number atau null — JANGAN inisialisasi 0
+  const [savingDraft, setSavingDraft] = useState(false);
+  const [draftSaved, setDraftSaved]   = useState(false);
   const [overrideScore, setOverride]  = useState(null);
   const [reviewerNote, setNote]       = useState('');
   const [confirmed, setConfirmed]     = useState(false);
 
-  // Sync dari props — tapi HANYA saat props berubah dan belum ada draft lokal
+  // Sync dari props — restore semua state termasuk reviewer_note dari DB
   useEffect(() => {
     if (existingAnswer?.answer_text) setAnswer(existingAnswer.answer_text);
     if (existingEval) {
       setAiDraft(existingEval);
       setConfirmed(existingEval.is_confirmed || false);
-      // Set override ke final_score yang sudah dikonfirmasi, BUKAN ai_score
-      if (existingEval.is_confirmed) {
-        setOverride(existingEval.final_score);
-      }
+      // Restore catatan penilai dari DB
+      if (existingEval.reviewer_note) setNote(existingEval.reviewer_note);
+      // Restore skor override dari DB
+      if (existingEval.final_score) setOverride(existingEval.final_score);
     }
-  }, [existingEval?.id, existingAnswer?.id]); // hanya re-run saat ID berubah, bukan tiap render
+  }, [existingEval?.id, existingAnswer?.id]);
+
+  // Reset draftSaved indicator setelah 3 detik
+  useEffect(() => {
+    if (draftSaved) {
+      const t = setTimeout(() => setDraftSaved(false), 3000);
+      return () => clearTimeout(t);
+    }
+  }, [draftSaved]);
 
   async function handleEvaluate() {
     if (!answer.trim()) { alert('Isi jawaban kandidat terlebih dahulu.'); return; }
@@ -35,10 +54,12 @@ function UCCard({ uc, stage, candidateId, existingAnswer, existingEval, onEvalSa
       const savedAnswer = await saveAnswer(candidateId, stage, uc.id, answer);
       const result = await evaluateAnswer(uc, answer);
       await saveEvaluation(savedAnswer.id, candidateId, uc.id, stage, result);
-      // Set draft lokal — TIDAK trigger reload parent supaya state tidak di-reset
-      setAiDraft({ ...result, ai_score: result.score, ai_reasoning: result.reasoning,
-        ai_evidence: result.evidence, ai_direction: result.direction, ai_flag: result.flag });
-      setOverride(result.score); // default override = skor AI
+      setAiDraft({
+        ...result,
+        ai_score: result.score, ai_reasoning: result.reasoning,
+        ai_evidence: result.evidence, ai_direction: result.direction, ai_flag: result.flag
+      });
+      setOverride(result.score);
       setConfirmed(false);
     } catch (e) {
       alert('Evaluasi gagal: ' + e.message);
@@ -47,17 +68,32 @@ function UCCard({ uc, stage, candidateId, existingAnswer, existingEval, onEvalSa
     }
   }
 
+  async function handleSaveDraft() {
+    if (!aiDraft) { alert('Lakukan evaluasi AI terlebih dahulu.'); return; }
+    const scoreToSave = overrideScore || aiDraft.ai_score || aiDraft.score;
+    setSavingDraft(true);
+    try {
+      // Simpan jawaban dulu kalau belum
+      if (answer.trim()) await saveAnswer(candidateId, stage, uc.id, answer);
+      // Simpan skor + catatan sementara (tanpa konfirmasi)
+      await saveDraftToDB(candidateId, uc.id, Number(scoreToSave), reviewerNote);
+      setDraftSaved(true);
+    } catch (e) {
+      alert('Gagal simpan draft: ' + e.message);
+    } finally {
+      setSavingDraft(false);
+    }
+  }
+
   async function handleConfirm() {
     if (!aiDraft) return;
-    // Bug fix: overrideScore pasti number karena di-set dari skor AI saat evaluasi
-    // Kalau user ganti dropdown, overrideScore = pilihan user
-    const scoreToSave = overrideScore || (aiDraft.ai_score || aiDraft.score);
+    const scoreToSave = overrideScore || aiDraft.ai_score || aiDraft.score;
     setConfirming(true);
     try {
       await confirmEvaluationByUC(candidateId, uc.id, Number(scoreToSave), reviewerNote, 'Panel');
       setConfirmed(true);
       setAiDraft(prev => ({ ...prev, final_score: Number(scoreToSave), is_confirmed: true }));
-      onEvalSaved && onEvalSaved(); // reload parent untuk update counter
+      onEvalSaved && onEvalSaved();
     } catch (e) {
       alert('Konfirmasi gagal: ' + e.message);
     } finally {
@@ -70,12 +106,17 @@ function UCCard({ uc, stage, candidateId, existingAnswer, existingEval, onEvalSa
 
   return (
     <div className="uc-card uc-active">
+      {/* Header UC */}
       <div className="uc-header">
         <span className="uc-code">{uc.id}</span>
         <span className="uc-title">{uc.title}</span>
         {uc.mechanism && <span className="badge badge-purple">{uc.mechanism}</span>}
         <span className="badge badge-blue">Klaster {uc.klaster}</span>
-        {confirmed && <span className="confirmed-pill" style={{ marginLeft: 'auto' }}>✓ Dikonfirmasi — Skor {aiDraft?.final_score}</span>}
+        {confirmed && (
+          <span className="confirmed-pill" style={{ marginLeft:'auto' }}>
+            ✓ Dikonfirmasi — Skor {aiDraft?.final_score}
+          </span>
+        )}
       </div>
 
       <div className="uc-prompt">{uc.prompt}</div>
@@ -87,10 +128,11 @@ function UCCard({ uc, stage, candidateId, existingAnswer, existingEval, onEvalSa
       <div className="uc-meta">
         <span className="uc-cari"><strong>Cari:</strong> {uc.cari}</span>
         <span className="uc-waspadai"><strong>Waspadai:</strong> {uc.waspadai}</span>
-        {uc.signal && <span style={{ color: '#2E75B6' }}><strong>Sinyal:</strong> {uc.signal}</span>}
+        {uc.signal && <span style={{ color:'#2E75B6' }}><strong>Sinyal:</strong> {uc.signal}</span>}
       </div>
 
-      <div className="field" style={{ marginTop: 14 }}>
+      {/* Jawaban */}
+      <div className="field" style={{ marginTop:14 }}>
         <label>Jawaban kandidat</label>
         <textarea
           value={answer}
@@ -101,14 +143,17 @@ function UCCard({ uc, stage, candidateId, existingAnswer, existingEval, onEvalSa
         />
       </div>
 
-      <div style={{ display: 'flex', gap: 10, alignItems: 'center', marginBottom: 14, flexWrap: 'wrap' }}>
+      <div style={{ display:'flex', gap:10, alignItems:'center', marginBottom:14, flexWrap:'wrap' }}>
         <button className="btn btn-blue btn-sm" onClick={handleEvaluate}
           disabled={loading || confirmed || !answer.trim()}>
-          {loading ? <><div className="spinner" /> Mengevaluasi...</> : '🤖 Evaluasi dengan AI'}
+          {loading
+            ? <><div className="spinner"/> Mengevaluasi...</>
+            : '🤖 Evaluasi dengan AI'}
         </button>
         {aiDraft && !confirmed && <span className="draft-pill">Draft AI — belum dikonfirmasi</span>}
       </div>
 
+      {/* AI Draft */}
       {aiDraft && (
         <div className="ai-draft">
           <div className="ai-draft-header">
@@ -117,45 +162,104 @@ function UCCard({ uc, stage, candidateId, existingAnswer, existingEval, onEvalSa
             <DirectionBadge direction={aiDraft.ai_direction || aiDraft.direction} />
             <FlagBadge flag={aiDraft.ai_flag || aiDraft.flag} />
           </div>
-          <div className="ai-reasoning"><strong>Reasoning:</strong> {aiDraft.ai_reasoning || aiDraft.reasoning}</div>
-          <div className="ai-evidence"><strong>Evidence:</strong> "{aiDraft.ai_evidence || aiDraft.evidence}"</div>
-          {(aiDraft.flag_note) && (
-            <div className="ai-flag-note"><strong>Catatan panel:</strong> {aiDraft.flag_note}</div>
+
+          <div className="ai-reasoning">
+            <strong>Reasoning:</strong> {aiDraft.ai_reasoning || aiDraft.reasoning}
+          </div>
+          <div className="ai-evidence">
+            <strong>Evidence:</strong> "{aiDraft.ai_evidence || aiDraft.evidence}"
+          </div>
+          {aiDraft.flag_note && (
+            <div className="ai-flag-note">
+              <strong>Catatan panel:</strong> {aiDraft.flag_note}
+            </div>
           )}
 
+          {/* Panel konfirmasi */}
           {!confirmed && (
-            <div style={{ marginTop: 12, padding: '12px 14px', background: 'white', borderRadius: 8, border: '1px solid #E5E7EB' }}>
-              <div style={{ fontSize: 12, fontWeight: 700, color: '#374151', marginBottom: 10, textTransform: 'uppercase', letterSpacing: '0.05em' }}>
-                Konfirmasi Penilai
+            <div style={{ marginTop:14, padding:'16px 18px', background:'white', borderRadius:10, border:'1px solid #E5E7EB' }}>
+              <div style={{ fontSize:12, fontWeight:800, color:'#374151', marginBottom:12, textTransform:'uppercase', letterSpacing:'0.06em' }}>
+                Penilaian Penilai
               </div>
-              <div style={{ display: 'flex', gap: 10, alignItems: 'flex-end', flexWrap: 'wrap' }}>
+
+              <div style={{ display:'grid', gridTemplateColumns:'auto 1fr', gap:'12px 16px', alignItems:'start', marginBottom:14 }}>
+                {/* Skor */}
                 <div>
-                  <label style={{ fontSize: 13, fontWeight: 600, color: '#4B5563', marginBottom: 5, display: 'block' }}>
-                    Skor final (ubah jika perlu):
+                  <label style={{ fontSize:13, fontWeight:600, color:'#4B5563', marginBottom:6, display:'block' }}>
+                    Skor final:
                   </label>
                   <select
                     value={currentDisplayScore}
                     onChange={e => setOverride(parseInt(e.target.value, 10))}
-                    style={{ padding: '8px 12px', fontSize: 14, borderRadius: 8, border: '1px solid #D1D5DB', fontFamily: 'inherit', background: 'white', color: '#111827' }}
+                    style={{ padding:'9px 12px', fontSize:14, borderRadius:8, border:'1px solid #D1D5DB', fontFamily:'inherit', background:'white', color:'#111827', cursor:'pointer' }}
                   >
                     <option value={1}>1 — Red Flag</option>
                     <option value={3}>3 — Average Fresh Grad</option>
                     <option value={5}>5 — Future Senior PM</option>
                   </select>
                 </div>
-                <div style={{ flex: 1, minWidth: 160 }}>
-                  <label style={{ fontSize: 13, fontWeight: 600, color: '#4B5563', marginBottom: 5, display: 'block' }}>
-                    Catatan penilai (opsional):
+
+                {/* Catatan */}
+                <div>
+                  <label style={{ fontSize:13, fontWeight:600, color:'#4B5563', marginBottom:6, display:'block' }}>
+                    Catatan penilai:
+                    <span style={{ fontWeight:400, color:'#9CA3AF', marginLeft:6 }}>(tersimpan bersama draft & konfirmasi)</span>
                   </label>
-                  <input type="text" placeholder="Alasan override atau observasi tambahan..."
-                    value={reviewerNote} onChange={e => setNote(e.target.value)}
-                    style={{ padding: '8px 12px', fontSize: 14, borderRadius: 8, border: '1px solid #D1D5DB', width: '100%', fontFamily: 'inherit' }}
+                  <textarea
+                    value={reviewerNote}
+                    onChange={e => setNote(e.target.value)}
+                    placeholder="Alasan override, observasi tambahan, atau hal yang perlu digali di stage berikutnya..."
+                    rows={3}
+                    style={{ padding:'9px 12px', fontSize:14, borderRadius:8, border:'1px solid #D1D5DB', width:'100%', fontFamily:'inherit', resize:'vertical', lineHeight:1.55 }}
                   />
                 </div>
-                <button className="btn btn-green" onClick={handleConfirm} disabled={confirming} style={{ flexShrink: 0 }}>
-                  {confirming ? <><div className="spinner" /> Menyimpan...</> : '✓ Konfirmasi Skor'}
+              </div>
+
+              {/* Action buttons */}
+              <div style={{ display:'flex', gap:10, alignItems:'center', flexWrap:'wrap' }}>
+                <button
+                  className="btn btn-sm"
+                  onClick={handleSaveDraft}
+                  disabled={savingDraft}
+                  style={{ borderColor:'#D1D5DB' }}
+                >
+                  {savingDraft
+                    ? <><div className="spinner"/> Menyimpan...</>
+                    : '💾 Simpan Draft'}
+                </button>
+
+                {draftSaved && (
+                  <span style={{ fontSize:13, color:'#548235', fontWeight:600, display:'flex', alignItems:'center', gap:5 }}>
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3">
+                      <path d="M20 6L9 17l-5-5"/>
+                    </svg>
+                    Draft tersimpan
+                  </span>
+                )}
+
+                <button
+                  className="btn btn-green"
+                  onClick={handleConfirm}
+                  disabled={confirming}
+                  style={{ marginLeft:'auto' }}
+                >
+                  {confirming
+                    ? <><div className="spinner"/> Mengonfirmasi...</>
+                    : '✓ Konfirmasi Skor Final'}
                 </button>
               </div>
+
+              <div style={{ fontSize:12, color:'#9CA3AF', marginTop:10, lineHeight:1.5 }}>
+                <strong>Simpan Draft</strong> = skor & catatan tersimpan sementara, bisa diubah lagi.<br/>
+                <strong>Konfirmasi Skor Final</strong> = dikunci permanen, tidak bisa diubah lagi.
+              </div>
+            </div>
+          )}
+
+          {/* Tampilan jika sudah dikonfirmasi */}
+          {confirmed && aiDraft.reviewer_note && (
+            <div style={{ marginTop:12, padding:'10px 14px', background:'#E2EFDA', borderRadius:8, fontSize:14, color:'#374151' }}>
+              <strong style={{ color:'#548235' }}>Catatan penilai:</strong> {aiDraft.reviewer_note}
             </div>
           )}
         </div>
@@ -166,8 +270,8 @@ function UCCard({ uc, stage, candidateId, existingAnswer, existingEval, onEvalSa
 
 // ── Script Generator ──────────────────────────────────
 function ScriptPanel({ candidate, evals }) {
-  const [loading, setLoading]   = useState(false);
-  const [script, setScript]     = useState(null);
+  const [loading, setLoading] = useState(false);
+  const [script, setScript]   = useState(null);
 
   async function handleGenerate() {
     if (evals.length === 0) { alert('Evaluasi minimal 1 UC terlebih dahulu.'); return; }
@@ -184,31 +288,31 @@ function ScriptPanel({ candidate, evals }) {
   }
 
   return (
-    <div className="card" style={{ borderColor: '#2E75B6', borderWidth: 2 }}>
-      <div className="card-title" style={{ color: '#2E75B6' }}>Generate Interview Script Stage 4</div>
+    <div className="card" style={{ borderColor:'#2E75B6', borderWidth:2 }}>
+      <div className="card-title" style={{ color:'#2E75B6' }}>Generate Interview Script Stage 4</div>
       <Alert type="info">
-        AI menganalisis semua evaluasi kandidat ini dan merekomendasikan 7 UC Stage 4 yang paling perlu digali, beserta probe yang dipersonalisasi berdasarkan gap yang terdeteksi.
+        AI menganalisis semua evaluasi kandidat ini dan merekomendasikan 7 UC Stage 4 paling relevan, beserta probe yang dipersonalisasi berdasarkan gap yang terdeteksi.
       </Alert>
       <button className="btn btn-blue" onClick={handleGenerate} disabled={loading}>
-        {loading ? <><div className="spinner" /> Generating...</> : '✨ Generate Script Stage 4'}
+        {loading ? <><div className="spinner"/> Generating...</> : '✨ Generate Script Stage 4'}
       </button>
 
       {script && (
         <>
           <div className="divider" />
           <Alert type="success">Script berhasil di-generate — rekomendasi AI, panel tetap bisa menyesuaikan.</Alert>
-          <div style={{ fontSize: 14, marginBottom: 14, color: '#374151' }}>
+          <div style={{ fontSize:14, marginBottom:14, color:'#374151' }}>
             <strong>Rationale:</strong> {script.rationale}
           </div>
           {(script.questions || []).map(q => {
             const uc = BANK.stage4.find(u => u.id === q.uc_id);
             return (
-              <div key={q.uc_id} style={{ padding: '12px 14px', border: '1px solid #E5E7EB', borderRadius: 10, marginBottom: 10, borderLeft: '4px solid #2E75B6', background: '#FAFAFA' }}>
-                <div style={{ display: 'flex', gap: 8, alignItems: 'center', marginBottom: 6 }}>
+              <div key={q.uc_id} style={{ padding:'12px 14px', border:'1px solid #E5E7EB', borderRadius:10, marginBottom:10, borderLeft:'4px solid #2E75B6', background:'#FAFAFA' }}>
+                <div style={{ display:'flex', gap:8, alignItems:'center', marginBottom:6 }}>
                   <span className="uc-code">{q.uc_id}</span>
-                  <span style={{ fontSize: 14, fontWeight: 700 }}>{uc?.title || ''}</span>
+                  <span style={{ fontSize:14, fontWeight:700 }}>{uc?.title || ''}</span>
                 </div>
-                <div style={{ fontSize: 14, color: '#2E75B6', fontStyle: 'italic' }}>Probe: {q.custom_probe}</div>
+                <div style={{ fontSize:14, color:'#2E75B6', fontStyle:'italic' }}>Probe: {q.custom_probe}</div>
               </div>
             );
           })}
@@ -218,12 +322,12 @@ function ScriptPanel({ candidate, evals }) {
   );
 }
 
-// ── Main ──────────────────────────────────────────────
+// ── Main Component ────────────────────────────────────
 export default function Evaluasi({ candidate, candidates, onSelectCandidate, onBack }) {
-  const [answers, setAnswers]       = useState([]);
-  const [evals, setEvals]           = useState([]);
-  const [loading, setLoading]       = useState(false);
-  const [activeStage, setStage]     = useState(1);
+  const [answers, setAnswers]   = useState([]);
+  const [evals, setEvals]       = useState([]);
+  const [loading, setLoading]   = useState(false);
+  const [activeStage, setStage] = useState(1);
 
   const loadData = useCallback(async () => {
     if (!candidate) return;
@@ -246,17 +350,17 @@ export default function Evaluasi({ candidate, candidates, onSelectCandidate, onB
         {candidates.length === 0
           ? <Alert type="warn">Belum ada kandidat. Tambahkan dari Dashboard terlebih dahulu.</Alert>
           : (
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(240px,1fr))', gap: 14 }}>
+            <div style={{ display:'grid', gridTemplateColumns:'repeat(auto-fill, minmax(240px,1fr))', gap:14 }}>
               {candidates.map(c => (
-                <div key={c.id} className="card card-sm" style={{ cursor: 'pointer' }} onClick={() => onSelectCandidate(c)}>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 10 }}>
-                    <div className="avatar">{c.name.split(' ').map(w => w[0]).join('').slice(0,2).toUpperCase()}</div>
+                <div key={c.id} className="card card-sm" style={{ cursor:'pointer' }} onClick={() => onSelectCandidate(c)}>
+                  <div style={{ display:'flex', alignItems:'center', gap:12, marginBottom:10 }}>
+                    <div className="avatar">{c.name.split(' ').map(w=>w[0]).join('').slice(0,2).toUpperCase()}</div>
                     <div>
-                      <div style={{ fontWeight: 700, fontSize: 15 }}>{c.name}</div>
-                      <div style={{ fontSize: 13, color: '#9CA3AF' }}>{c.email}</div>
+                      <div style={{ fontWeight:700, fontSize:15 }}>{c.name}</div>
+                      <div style={{ fontSize:13, color:'#9CA3AF' }}>{c.email}</div>
                     </div>
                   </div>
-                  <div style={{ display: 'flex', gap: 7 }}>
+                  <div style={{ display:'flex', gap:7, flexWrap:'wrap' }}>
                     <span className={`badge-s${c.current_stage}`}>Stage {c.current_stage}</span>
                     <DirectionBadge direction={c.direction} />
                   </div>
@@ -268,28 +372,27 @@ export default function Evaluasi({ candidate, candidates, onSelectCandidate, onB
     );
   }
 
-  const stageUCs      = getActiveUCs(activeStage);
+  const stageUCs       = getActiveUCs(activeStage);
   const confirmedCount = evals.filter(e => e.is_confirmed && e.stage === activeStage).length;
-
 
   return (
     <div>
-      {/* Header */}
-      <div style={{ display: 'flex', alignItems: 'center', gap: 14, marginBottom: 22 }}>
+      {/* Header kandidat */}
+      <div style={{ display:'flex', alignItems:'center', gap:14, marginBottom:22 }}>
         <button className="btn btn-sm" onClick={onBack}>← Kembali</button>
-        <div className="avatar avatar-lg">{candidate.name.split(' ').map(w=>w[0]).join('').slice(0,2).toUpperCase()}</div>
-        <div>
-          <div style={{ fontSize: 18, fontWeight: 700, color: '#111827' }}>{candidate.name}</div>
-          <div style={{ fontSize: 14, color: '#9CA3AF' }}>{candidate.email}</div>
+        <div className="avatar avatar-lg">
+          {candidate.name.split(' ').map(w=>w[0]).join('').slice(0,2).toUpperCase()}
         </div>
-        <div style={{ marginLeft: 'auto' }}>
+        <div>
+          <div style={{ fontSize:18, fontWeight:700, color:'#111827' }}>{candidate.name}</div>
+          <div style={{ fontSize:14, color:'#9CA3AF' }}>{candidate.email}</div>
+        </div>
+        <div style={{ marginLeft:'auto' }}>
           <DirectionBadge direction={candidate.direction} />
         </div>
       </div>
 
-
-
-      {/* Stage tabs — navigasi utama */}
+      {/* Stage tabs */}
       <div className="tabs">
         {[
           { s:1, label:'Stage 1 — Aplikasi' },
@@ -297,35 +400,44 @@ export default function Evaluasi({ candidate, candidates, onSelectCandidate, onB
           { s:3, label:'Stage 3 — Case Study' },
           { s:4, label:'Stage 4 — Panel' },
         ].map(({ s, label }) => (
-          <button key={s} className={`tab-btn ${activeStage===s?'active':''}`} onClick={() => setStage(s)}>
+          <button key={s} className={`tab-btn ${activeStage===s?'active':''}`}
+            onClick={() => setStage(s)}>
             {label}
-            {s === candidate.current_stage && <span style={{ marginLeft:5, color:'#2E75B6', fontSize:10 }}>●</span>}
+            {s === candidate.current_stage && (
+              <span style={{ marginLeft:5, color:'#2E75B6', fontSize:10 }}>●</span>
+            )}
           </button>
         ))}
       </div>
 
-      <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 16 }}>
+      {/* Status bar */}
+      <div style={{ display:'flex', alignItems:'center', gap:10, marginBottom:16, flexWrap:'wrap' }}>
         <span className={`badge-s${activeStage}`}>Stage {activeStage}</span>
         <span className="text-muted">{stageUCs.length} UC aktif</span>
         <span className="text-muted">·</span>
-        <span className="text-muted">{confirmedCount} dikonfirmasi</span>
+        <span className="text-muted">{confirmedCount} dari {stageUCs.length} dikonfirmasi</span>
       </div>
 
       <Alert type="warn">
-        <strong>AI adalah pembantu, bukan penentu.</strong> Semua draft skor harus dikonfirmasi penilai. Override skor kapan pun diperlukan.
+        <div>
+          <strong>AI adalah pembantu, bukan penentu.</strong> Gunakan <em>Simpan Draft</em> untuk menyimpan sementara,
+          dan <em>Konfirmasi Skor Final</em> untuk mengunci. Catatan penilai selalu tersimpan bersama draft maupun konfirmasi.
+        </div>
       </Alert>
 
-      {loading ? <Spinner /> : stageUCs.map(uc => (
-        <UCCard
-          key={uc.id}
-          uc={uc}
-          stage={activeStage}
-          candidateId={candidate.id}
-          existingAnswer={answers.find(a => a.uc_id === uc.id)}
-          existingEval={evals.find(e => e.uc_id === uc.id)}
-          onEvalSaved={loadData}
-        />
-      ))}
+      {loading
+        ? <Spinner />
+        : stageUCs.map(uc => (
+            <UCCard
+              key={uc.id}
+              uc={uc}
+              stage={activeStage}
+              candidateId={candidate.id}
+              existingAnswer={answers.find(a => a.uc_id === uc.id)}
+              existingEval={evals.find(e => e.uc_id === uc.id)}
+              onEvalSaved={loadData}
+            />
+          ))}
 
       {activeStage >= 2 && evals.length > 0 && (
         <ScriptPanel candidate={candidate} evals={evals} />
