@@ -210,14 +210,6 @@ export async function deleteCandidate(candidateId) {
   if (error) throw error;
 }
 
-// ── UPDATE CURRENT STAGE ──────────────────────────────
-export async function updateCandidateStage(candidateId, newStage) {
-  const { error } = await supabase
-    .from('candidates')
-    .update({ current_stage: newStage })
-    .eq('id', candidateId);
-  if (error) throw error;
-}
 
 // ── SAVE STAGE 4 UCS (per kandidat dari Generate Script) ──
 export async function saveStage4UCs(candidateId, ucIds) {
