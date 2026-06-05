@@ -223,7 +223,7 @@ export const ACTIVE_INDEX = {
 
 export function getActiveUCs(stage) {
   const key = `stage${stage}`;
-  if (stage === 3) return [BANK.stage3[ACTIVE_INDEX.stage3], BANK.stage3[9]];
+  if (stage === 3) return [BANK.stage3[ACTIVE_INDEX.stage3], BANK.stage3[4], BANK.stage3[9]]; // default: UC_3_1 + UC_3_5 + UC_3_10
   return ACTIVE_INDEX[key].map(i => BANK[key][i]);
 }
 
@@ -236,18 +236,18 @@ export function getAllUCs(stage) {
 // Rotasi otomatis berdasarkan jumlah batch yang sudah ada.
 // UC_3_10 (index 9) selalu wajib di Stage 3, tidak dirotasi.
 export const ROTATION_SETS = [
-  // Set A — default
-  { stage1: [0, 1, 3, 5, 7], stage2: [0, 1, 2, 3, 4, 6, 8], stage3: 0, stage4: [0, 1, 2, 3, 4, 5, 6] },
-  // Set B
-  { stage1: [1, 2, 4, 6, 8], stage2: [0, 1, 3, 4, 5, 7, 9], stage3: 1, stage4: [0, 1, 2, 3, 5, 6, 7] },
-  // Set C
-  { stage1: [0, 2, 3, 6, 9], stage2: [0, 2, 3, 5, 6, 7, 9], stage3: 2, stage4: [0, 1, 2, 4, 5, 6, 8] },
-  // Set D
-  { stage1: [1, 3, 4, 7, 8], stage2: [1, 2, 4, 5, 6, 8, 9], stage3: 3, stage4: [0, 1, 3, 4, 5, 7, 8] },
-  // Set E
-  { stage1: [0, 2, 5, 6, 9], stage2: [0, 1, 2, 4, 7, 8, 9], stage3: 4, stage4: [0, 2, 3, 4, 6, 7, 9] },
-  // Set F
-  { stage1: [1, 2, 3, 7, 9], stage2: [1, 3, 4, 5, 6, 7, 8], stage3: 5, stage4: [1, 2, 3, 4, 5, 8, 9] },
+  // Set A — UC_3_1 (Charter) + UC_3_5 (Status Report 2 Audiens)
+  { stage1: [0, 1, 3, 5, 7], stage2: [0, 1, 2, 3, 4, 6, 8], stage3: 0, stage3_companion: 4, stage4: [0, 1, 2, 3, 4, 5, 6] },
+  // Set B — UC_3_2 (Prioritisasi) + UC_3_7 (Temukan Lubang Rencana)
+  { stage1: [1, 2, 4, 6, 8], stage2: [0, 1, 3, 4, 5, 7, 9], stage3: 1, stage3_companion: 6, stage4: [0, 1, 2, 3, 5, 6, 7] },
+  // Set C — UC_3_3 (Membaca Situasi) + UC_3_6 (Keputusan Under Pressure)
+  { stage1: [0, 2, 3, 6, 9], stage2: [0, 2, 3, 5, 6, 7, 9], stage3: 2, stage3_companion: 5, stage4: [0, 1, 2, 4, 5, 6, 8] },
+  // Set D — UC_3_4 (Mitigasi Risiko) + UC_3_9 (Koordinasi Pihak Tak Sinkron)
+  { stage1: [1, 3, 4, 7, 8], stage2: [1, 2, 4, 5, 6, 8, 9], stage3: 3, stage3_companion: 8, stage4: [0, 1, 3, 4, 5, 7, 8] },
+  // Set E — UC_3_6 (Keputusan Under Pressure) + UC_3_8 (Permintaan Perubahan)
+  { stage1: [0, 2, 5, 6, 9], stage2: [0, 1, 2, 4, 7, 8, 9], stage3: 5, stage3_companion: 7, stage4: [0, 2, 3, 4, 6, 7, 9] },
+  // Set F — UC_3_7 (Temukan Lubang) + UC_3_3 (Membaca Situasi)
+  { stage1: [1, 2, 3, 7, 9], stage2: [1, 3, 4, 5, 6, 7, 8], stage3: 6, stage3_companion: 2, stage4: [1, 2, 3, 4, 5, 8, 9] },
 ];
 
 export function getRotationSet(batchCount) {
@@ -259,6 +259,7 @@ export function getUCsFromSet(set) {
     stage1: set.stage1.map(i => BANK.stage1[i].id),
     stage2: set.stage2.map(i => BANK.stage2[i].id),
     stage3: BANK.stage3[set.stage3].id,
+    stage3_companion: BANK.stage3[set.stage3_companion].id,
     stage4: set.stage4.map(i => BANK.stage4[i].id),
   };
 }
@@ -271,6 +272,7 @@ export function getActiveUCsFromBatch(batch) {
     stage2: (batch.stage2_ucs || []).map(id => BANK.stage2.find(uc => uc.id === id)).filter(Boolean),
     stage3: [
       BANK.stage3.find(uc => uc.id === batch.stage3_uc),
+      batch.stage3_companion_uc ? BANK.stage3.find(uc => uc.id === batch.stage3_companion_uc) : null,
       BANK.stage3[9], // UC_3_10 selalu wajib
     ].filter(Boolean),
     stage4: (batch.stage4_ucs || []).map(id => BANK.stage4.find(uc => uc.id === id)).filter(Boolean),

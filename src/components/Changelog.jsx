@@ -2,8 +2,51 @@ import React, { useState } from 'react';
 
 const VERSIONS = [
   {
-    version: 'v1.0.0',
+    version: 'v1.3.0',
     label: 'Terbaru',
+    status: 'deployed',
+    title: 'Tab Analisis Akhir + Alur Evaluasi Lengkap',
+    date: '5 Jun 2025',
+    items: [
+      { type: 'new', text: 'Tab "Analisis Akhir" — panel komprehensif setelah Stage 4 berisi: radar chart skor per klaster, distribusi skor per stage, review konsistensi lintas semua stage, agregasi flag keaslian per UC, pola kontribusi individual, dan rekap catatan penilai. Semua section collapsible.' },
+      { type: 'new', text: 'Tab "Persiapan Panel" — antara Stage 3 dan Stage 4, berisi Generate Script Stage 4. UC terpilih disimpan per kandidat di Supabase (Opsi B), dengan fallback ke rotation set batch kalau tidak di-generate.' },
+      { type: 'new', text: 'Review Konsistensi dipindah ke tab Analisis Akhir — hanya muncul setelah ada jawaban dari semua 4 stage, bukan per stage.' },
+      { type: 'new', text: 'Stage 3 sekarang terdiri dari 3 UC: UC utama + UC pendamping komplementer + UC_3_10 refleksi wajib. Instruksi waktu kandidat 50-60 menit per UC.' },
+      { type: 'fix', text: 'Bug current_stage — badge Stage di Dashboard, dot di tab Evaluasi, dan label di Profil Kandidat sekarang otomatis update saat semua UC di stage dikonfirmasi.' },
+      { type: 'fix', text: 'Generate Script tidak lagi muncul di Stage 2 dan Stage 3.' },
+      { type: 'change', text: 'Supabase: tambah kolom stage4_ucs di tabel candidates (UC Stage 4 per kandidat), stage3_companion_uc di tabel batches.' },
+    ]
+  },
+  {
+    version: 'v1.2.0',
+    label: '',
+    status: 'deployed',
+    title: 'Stage 4 Dipersonalisasi + Perbaikan Alur Evaluasi',
+    date: '5 Jun 2025',
+    items: [
+      { type: 'new', text: 'Generate Script Stage 4 sekarang menentukan UC aktif per kandidat (Opsi B) — AI pilih 7 dari 10 UC Stage 4 berdasarkan gap kandidat. Kalau tidak di-generate, fallback ke 7 UC default dari rotation set batch.' },
+      { type: 'new', text: 'Generate Script dipindah ke tab Stage 4 saja, posisi paling atas sebagai langkah pertama sebelum input jawaban — tidak lagi muncul di Stage 2 dan Stage 3.' },
+      { type: 'new', text: 'UC Stage 4 terpilih disimpan per kandidat di Supabase, bukan per batch — setiap kandidat bisa punya set Stage 4 yang berbeda.' },
+      { type: 'fix', text: 'Bug dot biru — indikator stage aktif kandidat tidak lagi stuck di Stage 1.' },
+      { type: 'fix', text: 'Review Konsistensi sekarang hanya muncul setelah ada jawaban dari minimal 3 stage berbeda — bukan di setiap stage.' },
+    ]
+  },
+  {
+    version: 'v1.1.0',
+    label: '',
+    status: 'deployed',
+    title: 'Stage 3 Dua UC + Pasangan Komplementer',
+    date: '5 Jun 2025',
+    items: [
+      { type: 'new', text: 'Stage 3 sekarang selalu terdiri dari 2 UC — satu UC utama dan satu UC pendamping yang dipilih berdasarkan prinsip komplementer klaster. Setiap pasangan menutup dimensi kompetensi yang berbeda.' },
+      { type: 'new', text: 'Pasangan UC Stage 3: UC_3_1↔UC_3_5, UC_3_2↔UC_3_7, UC_3_3↔UC_3_6, UC_3_4↔UC_3_9, UC_3_6↔UC_3_8, UC_3_7↔UC_3_3, UC_3_8↔UC_3_4, UC_3_9↔UC_3_2 — mengikuti rotation set batch.' },
+      { type: 'change', text: 'Instruksi waktu kandidat Stage 3 diupdate — masing-masing UC dikerjakan 50-60 menit dalam total 2 jam, bukan satu UC 2 jam penuh.' },
+      { type: 'change', text: 'ROTATION_SETS di bank.js diupdate untuk menyertakan UC pendamping Stage 3 per set.' },
+    ]
+  },
+  {
+    version: 'v1.0.0',
+    label: '',
     status: 'deployed',
     title: 'Rotasi UC, Context Note, Hapus Refresh',
     date: '5 Jun 2025',
@@ -166,13 +209,13 @@ const BACKLOG = [
 const PRINSIP = [
   { title: 'Bank soal statis', desc: 'bank.js adalah sumber kebenaran tunggal. AI tidak pernah generate ulang soal.' },
   { title: 'AI sebagai pembantu', desc: 'Semua skor butuh konfirmasi penilai manusia. Tidak ada keputusan otomatis dari AI.' },
-  { title: 'Rotasi per batch', desc: 'UC aktif dipilih per batch dari ACTIVE_INDEX, bukan per kandidat.' },
+  { title: 'Rotasi per batch', desc: 'UC Stage 1-3 dipilih per batch dari rotation set. Stage 3 selalu 3 UC (utama + pendamping + UC_3_10). Stage 4 dipilih per kandidat dari Generate Script — dengan fallback ke rotation set.' },
   { title: 'confirmEvaluationByUC', desc: 'Selalu pakai ini — tidak pakai confirmEvaluation dengan evalId yang bisa undefined.' },
   { title: 'Cascade delete', desc: 'Hapus kandidat selalu lewat deleteCandidate yang hapus semua data terkait.' },
 ];
 
 export default function Changelog() {
-  const [expanded, setExpanded] = useState(new Set(['v1.0.0']));
+  const [expanded, setExpanded] = useState(new Set(['v1.3.0']));
 
   function toggle(v) {
     setExpanded(prev => {

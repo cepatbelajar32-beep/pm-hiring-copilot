@@ -112,7 +112,7 @@ function BatchModal({ batchCount, onClose, onCreated }) {
     if (!name.trim()) return;
     setLoad(true);
     try {
-      await createBatch(name.trim(), ucIds.stage1, ucIds.stage2, ucIds.stage3, ucIds.stage4);
+      await createBatch(name.trim(), ucIds.stage1, ucIds.stage2, ucIds.stage3, ucIds.stage4, ucIds.stage3_companion);
       onCreated(); onClose();
     } catch (e) { alert('Gagal membuat batch: ' + e.message); }
     finally { setLoad(false); }
@@ -137,7 +137,7 @@ function BatchModal({ batchCount, onClose, onCreated }) {
         <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 6 }}>
           {[1,2,3,4].map(s => {
             const ids = s === 3
-              ? [ucIds.stage3, 'UC_3_10']
+              ? [ucIds.stage3, ucIds.stage3_companion, 'UC_3_10']
               : ucIds[`stage${s}`];
             return (
               <div key={s} style={{ fontSize: 13 }}>

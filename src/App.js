@@ -142,7 +142,14 @@ export default function App() {
       case 'bank':
         return <BankSoal />;
       case 'evaluasi':
-        return <Evaluasi candidate={selectedCandidate} candidates={candidates} onSelectCandidate={handleSelectCandidate} onBack={() => setSelectedCandidate(null)} />;
+        return <Evaluasi
+          candidate={selectedCandidate}
+          candidates={candidates}
+          batch={selectedCandidate ? batches.find(b => b.id === selectedCandidate.batch_id) : null}
+          onSelectCandidate={handleSelectCandidate}
+          onBack={() => setSelectedCandidate(null)}
+          onRefresh={loadData}
+        />;
       case 'profile':
         if (selectedCandidate) {
           return <CandidateProfile candidate={selectedCandidate} onBack={() => setSelectedCandidate(null)} />;

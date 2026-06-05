@@ -13,10 +13,11 @@ export async function getBatches() {
   return data;
 }
 
-export async function createBatch(name, stage1Ucs, stage2Ucs, stage3Uc, stage4Ucs) {
+export async function createBatch(name, stage1Ucs, stage2Ucs, stage3Uc, stage4Ucs, stage3CompanionUc) {
   const { data, error } = await supabase.from('batches').insert({
     name, stage1_ucs: stage1Ucs, stage2_ucs: stage2Ucs,
-    stage3_uc: stage3Uc, stage4_ucs: stage4Ucs
+    stage3_uc: stage3Uc, stage4_ucs: stage4Ucs,
+    stage3_companion_uc: stage3CompanionUc || null
   }).select().single();
   if (error) throw error;
   return data;
@@ -206,5 +207,43 @@ export async function deleteCandidate(candidateId) {
   await supabase.from('evaluations').delete().eq('candidate_id', candidateId);
   await supabase.from('answers').delete().eq('candidate_id', candidateId);
   const { error } = await supabase.from('candidates').delete().eq('id', candidateId);
+  if (error) throw error;
+}
+
+// ── UPDATE CURRENT STAGE ──────────────────────────────
+export async function updateCandidateStage(candidateId, newStage) {
+  const { error } = await supabase
+    .from('candidates')
+    .update({ current_stage: newStage })
+    .eq('id', candidateId);
+  if (error) throw error;
+}
+
+// ── SAVE STAGE 4 UCS (per kandidat dari Generate Script) ──
+export async function saveStage4UCs(candidateId, ucIds) {
+  const { error } = await supabase
+    .from('candidates')
+    .update({ stage4_ucs: ucIds })
+    .eq('id', candidateId);
+  if (error) throw error;
+}
+
+// ── GET CANDIDATE STAGE4 UCS ─────────────────────────
+export async function getStage4UCs(candidateId) {
+  const { data, error } = await supabase
+    .from('candidates')
+    .select('stage4_ucs')
+    .eq('id', candidateId)
+    .single();
+  if (error) throw error;
+  return data?.stage4_ucs || null;
+}
+
+// ── UPDATE BATCH dengan stage3_companion ─────────────
+export async function updateBatchStage3Companion(batchId, companionUcId) {
+  const { error } = await supabase
+    .from('batches')
+    .update({ stage3_companion_uc: companionUcId })
+    .eq('id', batchId);
   if (error) throw error;
 }
