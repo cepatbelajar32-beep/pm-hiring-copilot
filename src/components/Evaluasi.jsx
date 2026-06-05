@@ -241,9 +241,8 @@ function UCCard({ uc, stage, candidateId, existingAnswer, existingEval, onEvalSa
 }
 
 // ── Persiapan Panel (Generate Script) ────────────────
-function PersiapanPanel({ candidate, batch, evals, onScriptGenerated }) {
+function PersiapanPanel({ candidate, batch, evals, script, onScriptGenerated }) {
   const [loading, setLoading]   = useState(false);
-  const [script, setScript]     = useState(null);
 
   async function handleGenerate() {
     if (evals.length === 0) { alert('Evaluasi minimal 1 UC terlebih dahulu.'); return; }
@@ -261,8 +260,7 @@ function PersiapanPanel({ candidate, batch, evals, onScriptGenerated }) {
 
       // Simpan UC terpilih ke kandidat di Supabase
       await saveStage4UCs(candidate.id, result.selected_ucs);
-      setScript(result);
-      onScriptGenerated && onScriptGenerated(result.selected_ucs);
+      onScriptGenerated && onScriptGenerated(result.selected_ucs, result);
     } catch(e) {
       console.error('Generate script error:', e);
       alert('Gagal generate script: ' + e.message);
@@ -597,6 +595,10 @@ export default function Evaluasi({ candidate, candidates, batch, onSelectCandida
   const [loading, setLoading]         = useState(false);
   const [activeStage, setStage]       = useState('s1');
   const [stage4UCs, setStage4UCs]     = useState(null); // UC Stage 4 per kandidat
+  const [generatedScript, setGeneratedScript] = useState(null); // script dari generate
+
+  // Reset script saat kandidat berubah
+  useEffect(() => { setGeneratedScript(null); }, [candidate?.id]);
 
   const loadData = useCallback(async () => {
     if (!candidate) return;
@@ -778,8 +780,10 @@ export default function Evaluasi({ candidate, candidates, batch, onSelectCandida
               candidate={candidate}
               batch={batch}
               evals={evals}
-              onScriptGenerated={(ucIds) => {
+              script={generatedScript}
+              onScriptGenerated={(ucIds, scriptResult) => {
                 setStage4UCs(ucIds);
+                setGeneratedScript(scriptResult);
                 loadData();
               }}
             />
