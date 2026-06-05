@@ -2,8 +2,23 @@ import React, { useState } from 'react';
 
 const VERSIONS = [
   {
-    version: 'v0.9.0',
+    version: 'v1.0.0',
     label: 'Terbaru',
+    status: 'deployed',
+    title: 'Rotasi UC, Context Note, Hapus Refresh',
+    date: '5 Jun 2025',
+    items: [
+      { type: 'new', text: 'Rotasi UC otomatis per batch — 6 rotation set (A–F) di bank.js. Saat buat batch baru, sistem pilih set berikutnya secara otomatis. Modal buat batch menampilkan preview UC yang akan dipakai dan set berikutnya.' },
+      { type: 'new', text: 'Tombol "Lihat UC" di setiap batch — klik untuk lihat daftar UC aktif per stage di batch tersebut, lengkap dengan klaster dan mekanisme.' },
+      { type: 'new', text: 'Context note untuk 7 UC yang konteksnya berat bagi fresh grad (UC 2.3, 2.7, 2.8, 3.7, 3.9, 4.4, 4.6) — kotak biru "Konteks untuk kandidat" tampil di atas soal di Evaluasi AI dan Bank Soal.' },
+      { type: 'fix', text: 'Revert bahasa: 23 istilah dikembalikan ke terminologi IT aslinya — SOW, scope, dependency, change request, paralelisasi, dll. Istilah tetap dipakai karena ini konteks organisasi IT.' },
+      { type: 'fix', text: 'Hapus tombol Refresh Data dari sidebar — tidak diperlukan karena data sudah auto-refresh setiap kali ada aksi.' },
+      { type: 'ui', text: 'Sidebar bersih: Dashboard, Bank Soal, Evaluasi AI, Profil Kandidat, Changelog — tanpa menu Sistem.' },
+    ]
+  },
+  {
+    version: 'v0.9.0',
+    label: '',
     status: 'deployed',
     title: 'Aspek Keaslian & Konsistensi Jawaban',
     date: '5 Jun 2025',
@@ -157,7 +172,7 @@ const PRINSIP = [
 ];
 
 export default function Changelog() {
-  const [expanded, setExpanded] = useState(new Set(['v0.9.0']));
+  const [expanded, setExpanded] = useState(new Set(['v1.0.0']));
 
   function toggle(v) {
     setExpanded(prev => {
