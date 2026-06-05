@@ -141,13 +141,32 @@ export async function confirmEvaluationByUC(candidateId, ucId, finalScore, revie
 }
 
 // ── INTERVIEW SCRIPTS ─────────────────────────────────
-export async function saveInterviewScript(candidateId, selectedUcs, scriptJson, rationale) {
-  const { data, error } = await supabase.from('interview_scripts').insert({
-    candidate_id: candidateId, selected_ucs: selectedUcs,
-    script_json: scriptJson, rationale
-  }).select().single();
-  if (error) throw error;
-  return data;
+export async function saveInterviewScript(candidateId, scriptResult) {
+  // Cek apakah sudah ada script untuk kandidat ini
+  const { data: existing } = await supabase
+    .from('interview_scripts')
+    .select('id')
+    .eq('candidate_id', candidateId)
+    .single();
+
+  if (existing) {
+    // Update yang sudah ada
+    const { data, error } = await supabase
+      .from('interview_scripts')
+      .update({ script_json: scriptResult, rationale: scriptResult.rationale || '' })
+      .eq('candidate_id', candidateId)
+      .select().single();
+    if (error) throw error;
+    return data;
+  } else {
+    // Insert baru
+    const { data, error } = await supabase
+      .from('interview_scripts')
+      .insert({ candidate_id: candidateId, script_json: scriptResult, rationale: scriptResult.rationale || '' })
+      .select().single();
+    if (error) throw error;
+    return data;
+  }
 }
 
 export async function getLatestScript(candidateId) {

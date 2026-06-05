@@ -2,7 +2,7 @@ import React, { useState, useEffect, useCallback } from 'react';
 import { ScoreBadge, DirectionBadge, Avatar, Spinner, FlagBadge, Alert } from './Shared';
 import {
   getAnswers, getEvaluations, saveAnswer, saveEvaluation,
-  confirmEvaluationByUC, updateCandidateStage,
+  confirmEvaluationByUC, updateCandidateStage, saveInterviewScript, getLatestScript,
   saveStage4UCs, getStage4UCs
 } from '../lib/supabase';
 import { evaluateAnswer, generateInterviewScript, analyzeConsistency } from '../lib/claude';
@@ -38,7 +38,7 @@ function CalibrationWarning({ w }) {
 }
 
 // ── UCCard ────────────────────────────────────────────
-function UCCard({ uc, stage, candidateId, existingAnswer, existingEval, onEvalSaved }) {
+function UCCard({ uc, stage, candidateId, existingAnswer, existingEval, onEvalSaved, onAIStart, onAIDone }) {
   const [answer, setAnswer]           = useState('');
   const [aiDraft, setAiDraft]         = useState(null);
   const [loading, setLoading]         = useState(false);
@@ -69,6 +69,7 @@ function UCCard({ uc, stage, candidateId, existingAnswer, existingEval, onEvalSa
   async function handleEvaluate() {
     if (!answer.trim()) { alert('Isi jawaban kandidat terlebih dahulu.'); return; }
     setLoading(true);
+    onAIStart && onAIStart();
     try {
       const savedAnswer = await saveAnswer(candidateId, stage, uc.id, answer);
       const result = await evaluateAnswer(uc, answer);
@@ -78,7 +79,7 @@ function UCCard({ uc, stage, candidateId, existingAnswer, existingEval, onEvalSa
       setOverride(result.score);
       setConfirmed(false);
     } catch(e) { alert('Evaluasi gagal: ' + e.message); }
-    finally { setLoading(false); }
+    finally { setLoading(false); onAIDone && onAIDone(); }
   }
 
   async function handleSaveDraft() {
@@ -241,12 +242,13 @@ function UCCard({ uc, stage, candidateId, existingAnswer, existingEval, onEvalSa
 }
 
 // ── Persiapan Panel (Generate Script) ────────────────
-function PersiapanPanel({ candidate, batch, evals, script, onScriptGenerated }) {
+function PersiapanPanel({ candidate, batch, evals, script, onScriptGenerated, onAIStart, onAIDone }) {
   const [loading, setLoading]   = useState(false);
 
   async function handleGenerate() {
     if (evals.length === 0) { alert('Evaluasi minimal 1 UC terlebih dahulu.'); return; }
     setLoading(true);
+    onAIStart && onAIStart();
     try {
       const result = await generateInterviewScript(candidate, evals, BANK.stage4);
       console.log('Generate script result:', result);
@@ -260,12 +262,18 @@ function PersiapanPanel({ candidate, batch, evals, script, onScriptGenerated }) 
 
       // Simpan UC terpilih ke kandidat di Supabase
       await saveStage4UCs(candidate.id, result.selected_ucs);
+      // Simpan ke Supabase (non-fatal)
+      try {
+        await saveInterviewScript(candidate.id, result);
+      } catch(saveErr) {
+        console.warn('saveInterviewScript gagal:', saveErr.message);
+      }
       onScriptGenerated && onScriptGenerated(result.selected_ucs, result);
     } catch(e) {
       console.error('Generate script error:', e);
       alert('Gagal generate script: ' + e.message);
     }
-    finally { setLoading(false); }
+    finally { setLoading(false); onAIDone && onAIDone(); }
   }
 
   return (
@@ -314,7 +322,7 @@ function PersiapanPanel({ candidate, batch, evals, script, onScriptGenerated }) 
 }
 
 // ── Analisis Akhir ────────────────────────────────────
-function AnalisisAkhir({ candidate, answers, evals }) {
+function AnalisisAkhir({ candidate, answers, evals, onAIStart, onAIDone }) {
   const [loading, setLoading]     = useState(false);
   const [result, setResult]       = useState(null);
   const [error, setError]         = useState(null);
@@ -357,13 +365,14 @@ function AnalisisAkhir({ candidate, answers, evals }) {
   async function handleReview() {
     if (answers.length < 4) { alert('Perlu jawaban dari minimal semua stage untuk analisis konsistensi.'); return; }
     setLoading(true);
+    onAIStart && onAIStart();
     setError(null);
     try {
       const res = await analyzeConsistency(candidate, answers, evals);
       setResult(res);
       setSections(prev => ({ ...prev, konsistensi: true }));
     } catch(e) { setError(e.message); }
-    finally { setLoading(false); }
+    finally { setLoading(false); onAIDone && onAIDone(); }
   }
 
   const consistencyColor = {
@@ -596,6 +605,7 @@ export default function Evaluasi({ candidate, candidates, batch, onSelectCandida
   const [activeStage, setStage]       = useState('s1');
   const [stage4UCs, setStage4UCs]     = useState(null); // UC Stage 4 per kandidat
   const [generatedScript, setGeneratedScript] = useState(null); // script dari generate
+  const [isAIRunning, setIsAIRunning]         = useState(false); // lock navigasi tab saat AI proses
 
   // Reset script saat kandidat berubah
   useEffect(() => { setGeneratedScript(null); }, [candidate?.id]);
@@ -604,14 +614,18 @@ export default function Evaluasi({ candidate, candidates, batch, onSelectCandida
     if (!candidate) return;
     setLoading(true);
     try {
-      const [a, e, s4] = await Promise.all([
+      const [a, e, s4, latestScript] = await Promise.all([
         getAnswers(candidate.id),
         getEvaluations(candidate.id),
         getStage4UCs(candidate.id),
+        getLatestScript(candidate.id),
       ]);
       setAnswers(a || []);
       setEvals(e || []);
       setStage4UCs(s4 || null);
+      if (latestScript?.script_json) {
+        setGeneratedScript(latestScript.script_json);
+      }
     } catch(err) { console.error(err); }
     finally { setLoading(false); }
   }, [candidate?.id]);
@@ -722,10 +736,23 @@ export default function Evaluasi({ candidate, candidates, batch, onSelectCandida
       </div>
 
       {/* Tabs */}
+      {isAIRunning && (
+        <div style={{ background:'#FBF3D5', border:'1px solid #BF8F00', borderLeft:'4px solid #BF8F00',
+          borderRadius:8, padding:'10px 16px', marginBottom:12, display:'flex', alignItems:'center', gap:10 }}>
+          <div className="spinner" style={{ borderColor:'#BF8F00', borderTopColor:'transparent' }} />
+          <span style={{ fontSize:13, fontWeight:600, color:'#633806' }}>
+            AI sedang memproses — jangan pindah tab atau refresh sampai selesai
+          </span>
+        </div>
+      )}
       <div className="tabs" style={{ flexWrap:'wrap' }}>
         {tabs.map(tab => (
-          <button key={tab.key} className={`tab-btn ${activeStage===tab.key?'active':''}`}
-            onClick={() => setStage(tab.key)}>
+          <button key={tab.key}
+            className={`tab-btn ${activeStage===tab.key?'active':''}`}
+            onClick={() => { if (!isAIRunning) setStage(tab.key); }}
+            disabled={isAIRunning && activeStage !== tab.key}
+            style={{ opacity: isAIRunning && activeStage !== tab.key ? 0.4 : 1,
+              cursor: isAIRunning && activeStage !== tab.key ? 'not-allowed' : 'pointer' }}>
             {tab.label}
             {tab.stageNum && tab.stageNum === candidate.current_stage && (
               <span style={{ marginLeft:5, color:'#2E75B6', fontSize:10 }}>●</span>
@@ -768,7 +795,9 @@ export default function Evaluasi({ candidate, candidates, batch, onSelectCandida
                   <UCCard key={uc.id} uc={uc} stage={tab.stageNum} candidateId={candidate.id}
                     existingAnswer={answers.find(a => a.uc_id === uc.id)}
                     existingEval={evals.find(e => e.uc_id === uc.id)}
-                    onEvalSaved={() => handleEvalSaved(tab.stageNum)} />
+                    onEvalSaved={() => handleEvalSaved(tab.stageNum)}
+                    onAIStart={() => setIsAIRunning(true)}
+                    onAIDone={() => setIsAIRunning(false)} />
                 ))}
               </div>
             );
@@ -786,12 +815,16 @@ export default function Evaluasi({ candidate, candidates, batch, onSelectCandida
                 setGeneratedScript(scriptResult);
                 loadData();
               }}
+              onAIStart={() => setIsAIRunning(true)}
+              onAIDone={() => setIsAIRunning(false)}
             />
           )}
 
           {/* Tab Analisis Akhir */}
           {activeStage === 'analisis' && (
-            <AnalisisAkhir candidate={candidate} answers={answers} evals={evals} />
+            <AnalisisAkhir candidate={candidate} answers={answers} evals={evals}
+            onAIStart={() => setIsAIRunning(true)}
+            onAIDone={() => setIsAIRunning(false)} />
           )}
         </>
       )}
