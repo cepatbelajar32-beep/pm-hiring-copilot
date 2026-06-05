@@ -125,6 +125,20 @@ export async function confirmEvaluation(evalId, finalScore, reviewerNote, review
   if (error) throw error;
 }
 
+// Konfirmasi berdasarkan candidateId + ucId — tidak bergantung pada evalId yang mungkin undefined
+export async function confirmEvaluationByUC(candidateId, ucId, finalScore, reviewerNote, reviewedBy) {
+  const { error } = await supabase.from('evaluations').update({
+    final_score: finalScore,
+    reviewer_note: reviewerNote,
+    reviewed_by: reviewedBy,
+    reviewed_at: new Date().toISOString(),
+    is_confirmed: true
+  })
+  .eq('candidate_id', candidateId)
+  .eq('uc_id', ucId);
+  if (error) throw error;
+}
+
 // ── INTERVIEW SCRIPTS ─────────────────────────────────
 export async function saveInterviewScript(candidateId, selectedUcs, scriptJson, rationale) {
   const { data, error } = await supabase.from('interview_scripts').insert({

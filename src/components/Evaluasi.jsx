@@ -1,7 +1,7 @@
 // src/components/Evaluasi.jsx
 import React, { useState, useEffect, useCallback } from 'react';
 import { ScoreBadge, DirectionBadge, StageBadge, Avatar, Spinner, FlagBadge, Alert, Modal } from './Shared';
-import { getAnswers, getEvaluations, saveAnswer, saveEvaluation, confirmEvaluation, saveInterviewScript, getLatestScript, updateCandidateStage, updateCandidateDecision } from '../lib/supabase';
+import { getAnswers, getEvaluations, saveAnswer, saveEvaluation, confirmEvaluation, confirmEvaluationByUC, saveInterviewScript, getLatestScript, updateCandidateStage, updateCandidateDecision } from '../lib/supabase';
 import { evaluateAnswer, generateInterviewScript } from '../lib/claude';
 import { getActiveUCs, BANK } from '../data/bank';
 
@@ -72,9 +72,13 @@ function UCCard({ uc, stage, candidateId, existingAnswer, existingEval, onEvalSa
 
   async function handleConfirm() {
     if (!aiDraft) return;
+    // Ambil skor dari state override, fallback ke skor AI
+    const scoreToSave = Number(overrideScore) || Number(aiDraft.ai_score) || Number(aiDraft.score) || 3;
     setConfirming(true);
     try {
-      await confirmEvaluation(aiDraft.id, overrideScore || aiDraft.ai_score, reviewerNote, 'Panel');
+      // Pakai confirmEvaluationByUC — lebih reliable, tidak butuh evalId
+      await confirmEvaluationByUC(candidateId, uc.id, scoreToSave, reviewerNote, 'Panel');
+      setAiDraft(prev => ({ ...prev, final_score: scoreToSave, is_confirmed: true }));
       setConfirmed(true);
       onEvalSaved && onEvalSaved();
     } catch (e) {
@@ -158,8 +162,8 @@ function UCCard({ uc, stage, candidateId, existingAnswer, existingEval, onEvalSa
               <div>
                 <label style={{ fontSize: 11, color: '#4B5563', fontWeight: 600, marginBottom: 4, display: 'block' }}>Override skor:</label>
                 <select
-                  value={overrideScore || ''}
-                  onChange={e => setOverrideScore(parseInt(e.target.value))}
+                  value={overrideScore ?? (aiDraft?.ai_score ?? aiDraft?.score ?? 3)}
+                  onChange={e => { const v = parseInt(e.target.value, 10); if (!isNaN(v)) setOverrideScore(v); }}
                   style={{ padding: '5px 8px', fontSize: 12, borderRadius: 6, border: '1px solid #E5E7EB' }}
                 >
                   <option value={1}>1 — Red Flag</option>
