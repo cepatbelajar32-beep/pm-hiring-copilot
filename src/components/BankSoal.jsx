@@ -2,7 +2,7 @@
 import React, { useState } from 'react';
 import { BANK, ACTIVE_INDEX } from '../data/bank';
 
-const STAGE_LABELS = { 1: 'Stage 1 — Aplikasi', 2: 'Stage 2 — SJT', 3: 'Stage 3 — Case Study', 4: 'Stage 4 — Panel' };
+const STAGE_LABELS = { 1: 'Stage 1 — Aplikasi', 2: 'Stage 2 — Penilaian Situasi & Logika', 3: 'Stage 3 — Case Study', 4: 'Stage 4 — Panel' };
 const STAGE_ACTIVE = { 1: 5, 2: 7, 3: '1 + refleksi', 4: 7 };
 
 export default function BankSoal() {

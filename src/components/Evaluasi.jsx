@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { ScoreBadge, DirectionBadge, Avatar, Spinner, FlagBadge, Alert } from './Shared';
 import { getAnswers, getEvaluations, saveAnswer, saveEvaluation, confirmEvaluationByUC, saveInterviewScript } from '../lib/supabase';
-import { evaluateAnswer, generateInterviewScript } from '../lib/claude';
+import { evaluateAnswer, generateInterviewScript, analyzeConsistency } from '../lib/claude';
 import { getActiveUCs, BANK } from '../data/bank';
 
 // ── saveDraft ke supabase (update final_score + note tanpa konfirmasi) ──
@@ -214,6 +214,25 @@ function UCCard({ uc, stage, candidateId, existingAnswer, existingEval, onEvalSa
             </div>
           )}
 
+          {/* Individuality note */}
+          {(aiDraft.individuality_note) && (
+            <div style={{ background:'#EBF4FA', border:'1px solid #2E75B6', borderLeft:'3px solid #2E75B6', borderRadius:8, padding:'10px 14px', marginTop:8, fontSize:13, color:'#1F3864' }}>
+              <strong>👥 Pola penggunaan "kami":</strong> {aiDraft.individuality_note}
+            </div>
+          )}
+
+          {/* Authenticity flag */}
+          {aiDraft.authenticity_flag && (
+            <div style={{ background:'#FBF3D5', border:'1px solid #BF8F00', borderLeft:'3px solid #BF8F00', borderRadius:8, padding:'10px 14px', marginTop:8, fontSize:13, color:'#4B3500' }}>
+              <strong>
+                {aiDraft.authenticity_flag === 'possible_ai_generated' ? '🤖 Kemungkinan ditulis AI:' :
+                 aiDraft.authenticity_flag === 'possible_exaggeration' ? '📢 Kemungkinan dibesar-besarkan:' :
+                 '⚠ Detail tidak konsisten:'}
+              </strong>{' '}
+              {aiDraft.authenticity_note}
+            </div>
+          )}
+
           {/* Panel konfirmasi */}
           {!confirmed && (
             <div style={{ marginTop:14, padding:'16px 18px', background:'white', borderRadius:10, border:'1px solid #E5E7EB' }}>
@@ -299,6 +318,153 @@ function UCCard({ uc, stage, candidateId, existingAnswer, existingEval, onEvalSa
           {confirmed && aiDraft.reviewer_note && (
             <div style={{ marginTop:12, padding:'10px 14px', background:'#E2EFDA', borderRadius:8, fontSize:14, color:'#374151' }}>
               <strong style={{ color:'#548235' }}>Catatan penilai:</strong> {aiDraft.reviewer_note}
+            </div>
+          )}
+        </div>
+      )}
+    </div>
+  );
+}
+
+// ── Consistency Reviewer ─────────────────────────────
+function ConsistencyPanel({ candidate, allAnswers, allEvals }) {
+  const [loading, setLoading]   = useState(false);
+  const [result, setResult]     = useState(null);
+  const [error, setError]       = useState(null);
+
+  async function handleReview() {
+    if (allAnswers.length < 2) {
+      alert('Perlu minimal 2 jawaban untuk bisa menganalisis konsistensi.');
+      return;
+    }
+    setLoading(true);
+    setError(null);
+    try {
+      const res = await analyzeConsistency(candidate, allAnswers, allEvals);
+      setResult(res);
+    } catch(e) {
+      setError(e.message);
+    } finally {
+      setLoading(false);
+    }
+  }
+
+  const consistencyColor = {
+    tinggi: { bg:'#E2EFDA', color:'#548235', border:'#548235' },
+    sedang: { bg:'#FBF3D5', color:'#BF8F00', border:'#BF8F00' },
+    rendah: { bg:'#FBE4E4', color:'#C00000', border:'#C00000' },
+  };
+
+  return (
+    <div className="card" style={{ borderColor:'#534AB7', borderWidth:2, marginTop:8 }}>
+      <div className="card-title" style={{ color:'#534AB7' }}>Review Konsistensi Jawaban</div>
+      <div style={{ fontSize:14, color:'#4B5563', marginBottom:14, lineHeight:1.6 }}>
+        AI akan membaca <strong>semua jawaban kandidat sekaligus</strong> dan mencari: kontradiksi antar jawaban,
+        pola membesar-besarkan pencapaian, pola menyembunyikan kontribusi individual, dan jawaban yang terasa
+        tidak autentik atau seperti ditulis AI.
+      </div>
+      <button className="btn btn-sm" onClick={handleReview} disabled={loading}
+        style={{ background:'#EEEDFE', color:'#534AB7', borderColor:'#534AB7' }}>
+        {loading ? <><div className="spinner"/> Menganalisis...</> : '🔍 Review Konsistensi Semua Jawaban'}
+      </button>
+
+      {error && (
+        <div style={{ marginTop:12, padding:'10px 14px', background:'#FBE4E4', borderRadius:8, fontSize:13, color:'#C00000' }}>
+          Gagal menganalisis: {error}
+        </div>
+      )}
+
+      {result && (
+        <div style={{ marginTop:16 }}>
+          {/* Ringkasan */}
+          {result.overall_consistency && (() => {
+            const s = consistencyColor[result.overall_consistency] || consistencyColor.sedang;
+            return (
+              <div style={{ background:s.bg, border:`1px solid ${s.border}`, borderLeft:`4px solid ${s.border}`, borderRadius:10, padding:'12px 16px', marginBottom:14 }}>
+                <div style={{ fontWeight:800, fontSize:13, color:s.color, textTransform:'uppercase', letterSpacing:'0.05em', marginBottom:5 }}>
+                  Konsistensi Keseluruhan: {result.overall_consistency.charAt(0).toUpperCase() + result.overall_consistency.slice(1)}
+                </div>
+                <div style={{ fontSize:14, color:'#374151', lineHeight:1.6 }}>{result.consistency_summary}</div>
+              </div>
+            );
+          })()}
+
+          {/* Kontradiksi */}
+          {(result.contradictions || []).length > 0 && (
+            <div style={{ marginBottom:14 }}>
+              <div style={{ fontWeight:700, fontSize:13, color:'#C00000', marginBottom:8 }}>
+                ⚠ Kontradiksi yang ditemukan ({result.contradictions.length})
+              </div>
+              {result.contradictions.map((c, i) => (
+                <div key={i} style={{ padding:'10px 14px', background:'#FBE4E4', borderRadius:8, marginBottom:8, fontSize:13 }}>
+                  <div style={{ fontWeight:600, color:'#C00000', marginBottom:4 }}>
+                    {(c.uc_ids || []).join(' ↔ ')}
+                  </div>
+                  <div style={{ color:'#374151', lineHeight:1.6 }}>{c.description}</div>
+                </div>
+              ))}
+            </div>
+          )}
+
+          {/* Pola melebih-lebihkan */}
+          {(result.exaggeration_signals || []).length > 0 && (
+            <div style={{ marginBottom:14 }}>
+              <div style={{ fontWeight:700, fontSize:13, color:'#BF8F00', marginBottom:8 }}>
+                📢 Sinyal kemungkinan dibesar-besarkan ({result.exaggeration_signals.length})
+              </div>
+              {result.exaggeration_signals.map((e, i) => (
+                <div key={i} style={{ padding:'10px 14px', background:'#FBF3D5', borderRadius:8, marginBottom:8, fontSize:13 }}>
+                  <div style={{ fontWeight:600, color:'#BF8F00', marginBottom:4 }}>{e.uc_id}</div>
+                  <div style={{ color:'#374151', lineHeight:1.6 }}>{e.description}</div>
+                </div>
+              ))}
+            </div>
+          )}
+
+          {/* Pola individuality */}
+          {result.individuality_pattern && (
+            <div style={{ padding:'10px 14px', background:'#EBF4FA', border:'1px solid #2E75B6', borderLeft:'3px solid #2E75B6', borderRadius:8, marginBottom:14, fontSize:13 }}>
+              <div style={{ fontWeight:700, color:'#0C447C', marginBottom:4 }}>👥 Pola penggunaan kata "kami"</div>
+              <div style={{ color:'#374151', lineHeight:1.6 }}>{result.individuality_pattern}</div>
+            </div>
+          )}
+
+          {/* Kekhawatiran keaslian */}
+          {(result.authenticity_concerns || []).length > 0 && (
+            <div style={{ marginBottom:14 }}>
+              <div style={{ fontWeight:700, fontSize:13, color:'#534AB7', marginBottom:8 }}>
+                🤖 Kekhawatiran keaslian jawaban ({result.authenticity_concerns.length})
+              </div>
+              {result.authenticity_concerns.map((a, i) => (
+                <div key={i} style={{ padding:'10px 14px', background:'#EEEDFE', borderRadius:8, marginBottom:8, fontSize:13 }}>
+                  <div style={{ fontWeight:600, color:'#534AB7', marginBottom:4 }}>
+                    {a.uc_id} — {a.type === 'possible_ai_generated' ? 'Kemungkinan ditulis AI' :
+                      a.type === 'memorized_template' ? 'Terkesan dari template' : 'Tidak konsisten dengan jawaban lain'}
+                  </div>
+                  <div style={{ color:'#374151', lineHeight:1.6 }}>{a.description}</div>
+                </div>
+              ))}
+            </div>
+          )}
+
+          {/* Rekomendasi probe */}
+          {(result.probe_recommendations || []).length > 0 && (
+            <div style={{ marginBottom:14 }}>
+              <div style={{ fontWeight:700, fontSize:13, color:'#548235', marginBottom:8 }}>
+                💡 Pertanyaan yang disarankan untuk Stage 4
+              </div>
+              {result.probe_recommendations.map((p, i) => (
+                <div key={i} style={{ padding:'8px 12px', background:'#E2EFDA', borderRadius:6, marginBottom:6, fontSize:13, color:'#1F3A0A', lineHeight:1.6 }}>
+                  {i+1}. {p}
+                </div>
+              ))}
+            </div>
+          )}
+
+          {/* Catatan akhir */}
+          {result.overall_note && (
+            <div style={{ padding:'12px 16px', background:'#F9FAFB', border:'1px solid #E5E7EB', borderRadius:10, fontSize:14, color:'#374151', lineHeight:1.6 }}>
+              <strong>Catatan untuk panel:</strong> {result.overall_note}
             </div>
           )}
         </div>
@@ -435,7 +601,7 @@ export default function Evaluasi({ candidate, candidates, onSelectCandidate, onB
       <div className="tabs">
         {[
           { s:1, label:'Stage 1 — Aplikasi' },
-          { s:2, label:'Stage 2 — SJT' },
+          { s:2, label:'Stage 2 — Penilaian Situasi & Logika' },
           { s:3, label:'Stage 3 — Case Study' },
           { s:4, label:'Stage 4 — Panel' },
         ].map(({ s, label }) => (
@@ -480,6 +646,15 @@ export default function Evaluasi({ candidate, candidates, onSelectCandidate, onB
 
       {activeStage >= 2 && evals.length > 0 && (
         <ScriptPanel candidate={candidate} evals={evals} />
+      )}
+
+      {/* Review konsistensi — tampil setelah ada jawaban di semua stage */}
+      {answers.length >= 3 && (
+        <ConsistencyPanel
+          candidate={candidate}
+          allAnswers={answers}
+          allEvals={evals}
+        />
       )}
     </div>
   );
