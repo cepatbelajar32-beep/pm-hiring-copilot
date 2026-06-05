@@ -2,8 +2,20 @@ import React, { useState } from 'react';
 
 const VERSIONS = [
   {
-    version: 'v1.3.0',
+    version: 'v1.4.0',
     label: 'Terbaru',
+    status: 'deployed',
+    title: 'Halaman Referensi + Fix Bug',
+    date: '5 Jun 2025',
+    items: [
+      { type: 'new', text: 'Halaman Referensi — tab baru di sidebar berisi kerangka kompetensi lengkap (Klaster A/B/C/D dengan wujud konkret per kompetensi), bank soal & rubrik 1/3/5 per UC (40 UC, collapsible, per stage), dan mekanisme deteksi PM vs Product-fit (4 mekanisme + matriks keputusan).' },
+      { type: 'fix', text: 'Bug dot biru — handleEvalSaved sekarang baca fresh evals dari DB setelah konfirmasi UC, lalu update current_stage kandidat otomatis. Badge Stage di Dashboard dan Profil Kandidat ikut terupdate.' },
+      { type: 'fix', text: 'JSON Parse error generateInterviewScript — max_tokens dinaikkan dari 1200 ke 2000 untuk mencegah response terpotong.' },
+    ]
+  },
+  {
+    version: 'v1.3.0',
+    label: '',
     status: 'deployed',
     title: 'Tab Analisis Akhir + Alur Evaluasi Lengkap',
     date: '5 Jun 2025',
@@ -215,7 +227,7 @@ const PRINSIP = [
 ];
 
 export default function Changelog() {
-  const [expanded, setExpanded] = useState(new Set(['v1.3.0']));
+  const [expanded, setExpanded] = useState(new Set(['v1.4.0']));
 
   function toggle(v) {
     setExpanded(prev => {

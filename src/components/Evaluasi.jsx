@@ -605,24 +605,28 @@ export default function Evaluasi({ candidate, candidates, batch, onSelectCandida
 
   useEffect(() => { loadData(); }, [loadData]);
 
-  // Auto-update current_stage saat semua UC di stage dikonfirmasi
-  async function checkAndUpdateStage(stageNum) {
+  // Auto-update current_stage — baca fresh dari DB setelah loadData
+  async function handleEvalSaved(stageNum) {
+    // Load fresh data dulu
+    const { getEvaluations: fetchEvals } = await import('../lib/supabase');
+    const freshEvals = await fetchEvals(candidate.id);
+    
     const activeUCs = getStageUCs(stageNum);
-    const confirmedInStage = evals.filter(e => e.stage === stageNum && e.is_confirmed);
+    const confirmedInStage = (freshEvals || []).filter(e => e.stage === stageNum && e.is_confirmed);
+    
     if (activeUCs.length > 0 && confirmedInStage.length >= activeUCs.length) {
       const nextStage = stageNum + 1;
       if (nextStage <= 4 && candidate.current_stage < nextStage) {
         try {
           await updateCandidateStage(candidate.id, nextStage);
-          onRefresh && onRefresh();
+          onRefresh && onRefresh(); // refresh kandidat di parent (Dashboard/App)
         } catch(e) { console.error('Gagal update stage:', e); }
       }
     }
-  }
-
-  async function handleEvalSaved(stageNum) {
-    await loadData();
-    await checkAndUpdateStage(stageNum);
+    
+    // Update local state
+    setAnswers(await (await import('../lib/supabase')).getAnswers(candidate.id) || []);
+    setEvals(freshEvals || []);
   }
 
   // Ambil UC aktif untuk stage tertentu

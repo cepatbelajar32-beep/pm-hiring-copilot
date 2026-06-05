@@ -5,6 +5,7 @@ import Evaluasi from './components/Evaluasi';
 import BankSoal from './components/BankSoal';
 import CandidateProfile from './components/CandidateProfile';
 import Changelog from './components/Changelog';
+import Referensi from './components/Referensi';
 import { getBatches, getCandidates } from './lib/supabase';
 
 const Icon = {
@@ -15,6 +16,7 @@ const Icon = {
   menu: <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="18" x2="21" y2="18"/></svg>,
   x: <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M18 6L6 18M6 6l12 12"/></svg>,
   changelog: <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/><polyline points="10 9 9 9 8 9"/></svg>,
+  referensi: <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M4 19.5A2.5 2.5 0 016.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 014 19.5v-15A2.5 2.5 0 016.5 2z"/></svg>,
 };
 
 function Sidebar({ view, onNav, open, onClose }) {
@@ -23,6 +25,7 @@ function Sidebar({ view, onNav, open, onClose }) {
     { key: 'bank', icon: Icon.database, label: 'Bank Soal' },
     { key: 'evaluasi', icon: Icon.robot, label: 'Evaluasi AI' },
     { key: 'profile', icon: Icon.user, label: 'Profil Kandidat' },
+    { key: 'referensi', icon: Icon.referensi, label: 'Referensi' },
     { key: 'changelog', icon: Icon.changelog, label: 'Changelog' },
   ];
 
@@ -72,6 +75,7 @@ function PageHeader({ view, candidate, onMenuToggle }) {
     bank: { title: 'Bank Soal', desc: '40 UC tersimpan statis — AI tidak generate ulang soal' },
     evaluasi: { title: 'Evaluasi AI', desc: 'Draft penilaian AI + konfirmasi penilai manusia' },
     profile: { title: 'Profil Kandidat', desc: 'Analisis komprehensif berdasarkan semua evaluasi' },
+    referensi: { title: 'Referensi', desc: 'Kerangka kompetensi, rubrik per UC, dan mekanisme deteksi PM-fit' },
     changelog: { title: 'Changelog', desc: 'Riwayat pembaruan aplikasi dan prinsip arsitektur' },
   };
   const current = titles[view] || titles.dashboard;
@@ -187,6 +191,8 @@ export default function App() {
             )}
           </div>
         );
+      case 'referensi':
+        return <Referensi />;
       case 'changelog':
         return <Changelog />;
       default:

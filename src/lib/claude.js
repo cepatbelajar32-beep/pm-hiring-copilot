@@ -186,7 +186,8 @@ Panduan memilih:
 
   return await callClaude(
     systemPrompt,
-    `Kandidat: ${candidate.name}\n\nHasil evaluasi:\n${evalSummary}\n\nPertanyaan Stage 4 yang tersedia:\n${ucList}`
+    `Kandidat: ${candidate.name}\n\nHasil evaluasi:\n${evalSummary}\n\nPertanyaan Stage 4 yang tersedia:\n${ucList}`,
+    2000
   );
 }
 
