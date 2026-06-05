@@ -250,12 +250,28 @@ function PersiapanPanel({ candidate, batch, evals, onScriptGenerated }) {
     setLoading(true);
     try {
       const result = await generateInterviewScript(candidate, evals, BANK.stage4);
+      console.log('Generate script result:', result);
+
+      if (!result || !result.selected_ucs || !Array.isArray(result.selected_ucs)) {
+        throw new Error('Format response tidak valid — selected_ucs tidak ditemukan: ' + JSON.stringify(result));
+      }
+      if (!result.questions || !Array.isArray(result.questions)) {
+        throw new Error('Format response tidak valid — questions tidak ditemukan');
+      }
+
       // Simpan UC terpilih ke kandidat di Supabase
       await saveStage4UCs(candidate.id, result.selected_ucs);
-      await saveInterviewScript(candidate.id, result.selected_ucs, result, result.rationale);
+      try {
+        await saveInterviewScript(candidate.id, result.selected_ucs, result, result.rationale);
+      } catch(saveErr) {
+        console.warn('saveInterviewScript gagal (tidak fatal):', saveErr.message);
+      }
       setScript(result);
       onScriptGenerated && onScriptGenerated(result.selected_ucs);
-    } catch(e) { alert('Gagal generate script: ' + e.message); }
+    } catch(e) {
+      console.error('Generate script error:', e);
+      alert('Gagal generate script: ' + e.message);
+    }
     finally { setLoading(false); }
   }
 
