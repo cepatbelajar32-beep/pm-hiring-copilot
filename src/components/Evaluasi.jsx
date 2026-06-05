@@ -2,7 +2,7 @@ import React, { useState, useEffect, useCallback } from 'react';
 import { ScoreBadge, DirectionBadge, Avatar, Spinner, FlagBadge, Alert } from './Shared';
 import {
   getAnswers, getEvaluations, saveAnswer, saveEvaluation,
-  confirmEvaluationByUC, saveInterviewScript, updateCandidateStage,
+  confirmEvaluationByUC, updateCandidateStage,
   saveStage4UCs, getStage4UCs
 } from '../lib/supabase';
 import { evaluateAnswer, generateInterviewScript, analyzeConsistency } from '../lib/claude';
@@ -261,11 +261,6 @@ function PersiapanPanel({ candidate, batch, evals, onScriptGenerated }) {
 
       // Simpan UC terpilih ke kandidat di Supabase
       await saveStage4UCs(candidate.id, result.selected_ucs);
-      try {
-        await saveInterviewScript(candidate.id, result.selected_ucs, result, result.rationale);
-      } catch(saveErr) {
-        console.warn('saveInterviewScript gagal (tidak fatal):', saveErr.message);
-      }
       setScript(result);
       onScriptGenerated && onScriptGenerated(result.selected_ucs);
     } catch(e) {
