@@ -53,60 +53,63 @@ export const BANK = {
   ],
   stage2: [
     { id:"UC_2_1", title:"Locked-Scope Trap", klaster:"A", mechanism:"M1",
-      prompt:"Fitur X sudah masuk dalam dokumen kesepakatan kerja yang sudah ditandatangani bersama. Di tengah pengerjaan Anda menemukan cara yang lebih baik untuk user.\n\nDua jalan:\n1. Selesaikan versi SOW sekarang; catat ide untuk fase berikutnya.\n2. Ajukan permintaan perubahan resmi sekarang, lengkap dengan analisis dampaknya ke jadwal dan anggaran proyek.\n\nPilih satu dan jelaskan: kenapa pilihan itu, dan konsekuensi apa yang Anda terima?",
+      prompt:"Fitur X sudah masuk dalam SOW. Di tengah pengerjaan Anda menemukan cara yang lebih baik untuk user.\n\nDua jalan:\n1. Selesaikan versi SOW sekarang; catat ide untuk fase berikutnya.\n2. Ajukan change request resmi sekarang dengan analisis dampak ke timeline & budget.\n\nPilih satu dan jelaskan: kenapa pilihan itu, dan konsekuensi apa yang Anda terima?",
       trap:"Tim sudah mengerjakan 60% versi yang disepakati, dan deadline tinggal 3 minggu.",
       cari:"Menyadari situasi sesungguhnya: tim sudah mengerjakan 60% dan deadline tinggal 3 minggu — ini bukan saat yang tepat untuk perubahan besar. Sadar ada konsekuensi dari pilihan yang diambil, dan cenderung memilih menyelesaikan komitmen yang sudah berjalan.",
-      waspadai:"Tidak menyadari risikonya — tim sudah 60% selesai dan deadline mepet, perubahan sekarang sangat berisiko. Atau langsung ubah sendiri tanpa melewati proses persetujuan.",
+      waspadai:"Abai trap. Atau ingin ubah sendiri tanpa proses (scope dianggap cair).",
       signal:"Indikasi arah Product Manager: berpikir 'kesepakatan bisa diubah kalau manfaat untuk user lebih besar', tanpa mempertimbangkan dampak ke tim yang sedang mengerjakan." },
     { id:"UC_2_2", title:"Hybrid Tension", klaster:"A/B",
       prompt:"Tim teknis usul perbaikan internal yang memperlambat ~1 minggu tapi (klaim mereka) bikin sistem lebih aman jangka panjang. Scope & budget sudah dikunci. (Tidak perlu paham detail teknisnya.)\n\nDua jalan:\n1. Tahan usulan; jaga tanggal rilis demi komitmen yang sudah ada.\n2. Minta tim kuantifikasi dampak; jika layak, angkat ke stakeholder dengan opsi.\n\nPilih satu dan jelaskan: kenapa pilihan itu, dan konsekuensi apa yang Anda terima?",
       trap:"Rilis ini terikat komitmen ke divisi lain yang sudah menjadwalkan pelatihan user di tanggal rilis.",
       cari:"Menyadari keputusan ini punya riak ke divisi lain; menuntut data DAN menimbang komitmen eksternal.",
-      waspadai:"Tidak menyadari bahwa ada komitmen ke divisi lain yang terikat pada tanggal rilis, atau menyetujui permintaan tim tanpa mengukur dampaknya terlebih dahulu.", signal:null },
+      waspadai:"Abai trap (pelatihan user terikat tanggal) atau setujui tanpa menilai dampak.", signal:null },
     { id:"UC_2_3", title:"Vendor Mulai Telat", klaster:"B",
       prompt:"Vendor (pihak ketiga, tak bisa Anda perintah langsung) yang mengerjakan bagian penting mulai sering meleset dari tenggat kecil. Setiap ditanya: 'aman kok, nanti terkejar.' Bagian ini dibutuhkan tiga minggu lagi.\n\nDua jalan:\n1. Beri ruang berdasar rekam jejak baik, tapi tetapkan satu titik cek konkret minggu ini.\n2. Perketat pengawasan sekarang — minta bukti progres nyata, siapkan rencana cadangan.\n\nPilih satu dan jelaskan: kenapa pilihan itu, dan konsekuensi apa yang Anda terima?",
       trap:"Vendor ini tahun lalu menyelamatkan proyek lain di detik akhir; hubungan selama ini baik.",
       cari:"Rekam jejak baik bukan jaminan sekarang; jaga hubungan tapi punya garis tegas.",
-      waspadai:"Percaya begitu saja karena rekam jejak baik, padahal sinyal sekarang berbeda. Atau sebaliknya, langsung perketat pengawasan tanpa mempertimbangkan hubungan yang sudah dibangun.", signal:null ,
+      waspadai:"Percaya buta (abai sinyal sekarang) atau perketat membabi buta (abai modal hubungan).",
+      context_note: 'Dalam proyek IT, pekerjaan sering dilakukan oleh pihak ketiga (vendor) — perusahaan luar yang dikontrak untuk mengerjakan bagian tertentu. Berbeda dengan anggota tim internal, vendor tidak bisa diperintah langsung; hubungannya dikelola lewat kontrak dan komunikasi. Sebagai PM, Anda bertanggung jawab memastikan vendor deliver tepat waktu meski mereka bukan bawahan Anda.', signal:null ,
       calibration_warning: { type: 'context', label: 'Konteks terbatas — wajar untuk fresh grad', color: 'blue', text: 'Fresh grad belum pernah kelola vendor secara nyata. Yang dinilai: apakah sadar bahwa rekam jejak baik ≠ garansi performa sekarang, dan apakah tahu cara menjaga hubungan sambil tetap waspada. Bukan teknis vendor management.' } },
     { id:"UC_2_4", title:"Scope Creep Halus", klaster:"A/C",
       prompt:"Seorang stakeholder bisnis sering menyelipkan permintaan kecil di tengah jalan — 'ini sedikit saja kok', 'sekalian ya'. Satu-satu terlihat sepele, tapi menumpuk.\n\nDua jalan:\n1. Akomodasi yang kecil-kecil demi relasi, tapi mulai catat & batasi.\n2. Tunjukkan akumulasi dampak sekarang, arahkan semua ke mekanisme perubahan resmi.\n\nPilih satu dan jelaskan: kenapa pilihan itu, dan konsekuensi apa yang Anda terima?",
       trap:"Stakeholder ini baru saja membantu mempercepat approval anggaran minggu lalu — ada 'utang budi'.",
-      cari:"Menyeimbangkan: hargai relasi tanpa membiarkan ruang lingkup pekerjaan jadi melebar tanpa kendali; buat dampak terlihat dengan cara yang tidak mempermalukan atau membuat pihak lain defensif.",
-      waspadai:"Turuti semua karena utang budi (ruang lingkup pekerjaan jadi melebar tanpa kendali) atau tolak kaku tanpa memikirkan bagaimana menjaga hubungan baik dengan orang tersebut.", signal:null },
+      cari:"Menyeimbangkan: hargai relasi tanpa membiarkan scope creep; buat dampak terlihat dengan cara yang menjaga muka stakeholder.",
+      waspadai:"Turuti semua karena utang budi (scope creep) atau tolak kaku tanpa menavigasi relasi.", signal:null },
     { id:"UC_2_5", title:"Konflik Prioritas Antar-Stakeholder", klaster:"A/B",
-      prompt:"Dua stakeholder dengan jabatan setara meminta tim mengerjakan hal berbeda lebih dulu, dan keduanya merasa paling mendesak. Anda di tengah.\n\nDua jalan:\n1. Bawa ke kriteria objektif (dampak nyata, siapa yang bergantung pada siapa), fasilitasi keputusan bersama.\n2. Naikkan ke atasan bersama untuk diputuskan.\n\nPilih satu dan jelaskan: kenapa pilihan itu, dan konsekuensi apa yang Anda terima?",
-      trap:"Salah satunya benar secara objektif (pekerjaannya memblokir tim lain), tapi orangnya kurang vokal dalam menyampaikan hal itu sehingga kalah suara.",
-      cari:"Menemukan satu pihak pekerjaannya harus selesai lebih dulu sebelum orang lain bisa mulai — memblokir orang lain — memutuskan berdasar fakta, bukan volume suara.",
-      waspadai:"Dahulukan yang lebih berisik. Atau membagi pekerjaan menjadi dua tanpa benar-benar menyelesaikan konflik prioritasnya.", signal:null ,
+      prompt:"Dua stakeholder dengan jabatan setara meminta tim mengerjakan hal berbeda lebih dulu, dan keduanya merasa paling mendesak. Anda di tengah.\n\nDua jalan:\n1. Bawa ke kriteria objektif (dampak nyata, siapa yang dependency), fasilitasi keputusan bersama.\n2. Naikkan ke atasan bersama untuk diputuskan.\n\nPilih satu dan jelaskan: kenapa pilihan itu, dan konsekuensi apa yang Anda terima?",
+      trap:"Salah satunya benar secara objektif (pekerjaannya memblokir tim lain), tapi menyampaikannya kurang asertif sehingga kalah 'berisik'.",
+      cari:"Menemukan satu pihak punya dependency yang memblokir orang lain — memutuskan berdasar fakta, bukan volume suara.",
+      waspadai:"Dahulukan yang lebih berisik. Atau bagi dua (beban tim tanpa menyelesaikan konflik).", signal:null ,
       calibration_warning: { type: 'score3ok', label: 'Score 3 sudah bagus di UC ini', color: 'green', text: 'Fresh grad belum punya pengalaman navigasi konflik antar stakeholder senior. Score 3 dengan logika berbasis fakta/dampak sudah sinyal kuat. Jangan tunggu jawaban dengan political savviness level senior.' } },
     { id:"UC_2_6", title:"Logika & Dependency", klaster:"A",
       prompt:"Sebuah proyek punya 4 pekerjaan:\n• A: 3 hari\n• B: 2 hari (butuh A selesai dulu)\n• C: 4 hari (bisa jalan bersamaan dengan A)\n• D: 1 hari (butuh B dan C selesai)\n\nPertanyaan:\n1. Berapa waktu tercepat seluruh proyek bisa selesai?\n2. Pekerjaan mana yang paling berbahaya bila terlambat?\n\nJelaskan alasan Anda. (Tidak perlu tahu istilah teknis — yang dinilai adalah logika Anda.)",
       trap:"Di soal disebut 'C dikerjakan vendor yang biasanya telat 1 hari'.",
       cari:"Benar 6 hari (A→B→D) DAN menangkap trap: jika C molor 1 hari, dua jalur jadi sama kritis. Berpikir risiko.",
-      waspadai:"Menjumlah semua (10 hari) tanpa menyadari bahwa sebagian pekerjaan bisa dikerjakan bersamaan secara paralel. Atau tidak menangkap risiko dari vendor yang dikenal sering telat.", signal:null },
+      waspadai:"Menjumlah semua (10 hari) tanpa paham paralelisasi. Atau tidak menangkap risiko dari vendor yang dikenal sering telat.", signal:null },
     { id:"UC_2_7", title:"Production Incident", klaster:"B/D",
       prompt:"Sistem yang baru dirilis tiba-tiba bermasalah di jam sibuk. User bisnis panik dan menghubungi Anda terus-menerus. Tim teknis sedang menyelidiki. (Tidak perlu paham teknisnya.)\n\nDua jalan:\n1. Tunjuk satu kanal update terjadwal untuk semua (termasuk direktur), lindungi waktu koordinasi Anda.\n2. Penuhi permintaan direktur (lapor langsung tiap 15 menit) demi menjaga relasi penting.\n\nPilih satu dan jelaskan: kenapa pilihan itu, dan konsekuensi apa yang Anda terima?",
       trap:"Salah satu yang menghubungi adalah direktur yang meminta Anda lapor langsung ke dia tiap 15 menit — padahal itu menyita waktu dari mengoordinasi.",
-      cari:"Lindungi kapasitas koordinasi tanpa mengabaikan keperluan direktur untuk mendapat update: update terjadwal + delegasikan satu liaison. Tegas + politik cerdas.",
-      waspadai:"Ikut nyemplung benerin teknis, atau menuruti direktur sampai lalai koordinasi.", signal:null ,
+      cari:"Lindungi kapasitas koordinasi tanpa mengabaikan direktur: update terjadwal + delegasikan satu liaison. Tegas + politik cerdas.",
+      waspadai:"Ikut nyemplung benerin teknis, atau menuruti direktur sampai lalai koordinasi.",
+      context_note: 'Dalam proyek IT, "production incident" adalah situasi di mana sistem yang sudah dirilis ke pengguna tiba-tiba bermasalah — misalnya aplikasi error, data tidak muncul, atau fitur tidak bisa dipakai. Ini kondisi darurat karena berdampak langsung ke pengguna yang sedang bekerja. Peran PM di sini bukan membenahi teknis (itu tugas tim teknis), tapi mengoordinasi semua pihak dan memastikan komunikasi berjalan lancar.', signal:null ,
       calibration_warning: { type: 'context', label: 'Konteks terbatas — wajar untuk fresh grad', color: 'blue', text: 'Fresh grad belum pernah menangani production incident nyata. Nilai urutan pikirnya dan kesadaran prioritas (koordinasi > memadamkan api sendiri) — bukan hafal protokol incident response.' } },
     { id:"UC_2_8", title:"Estimasi Terlalu Optimistis", klaster:"A/B",
       prompt:"Tim teknis memberi perkiraan waktu yang terasa terlalu cepat/optimistis bagi Anda. Anda bukan orang teknis dan tidak bisa menilai detailnya. (Tidak perlu jadi teknis — jelaskan bagaimana Anda menyikapinya sebagai PM.)\n\nDua jalan:\n1. Gali asumsi lewat pertanyaan (sudah masuk testing? revisi? dependensi?), ajak diskusi tanpa menggurui.\n2. Terima estimasi tapi pasang titik cek dini untuk mendeteksi meleset lebih awal.\n\nPilih satu dan jelaskan: kenapa pilihan itu, dan konsekuensi apa yang Anda terima?",
       trap:"Tim ini baru saja dikritik manajemen karena proyek sebelumnya lambat — ada tekanan untuk 'terlihat cepat'.",
-      cari:"Membaca kenapa estimasi mungkin optimistis (tekanan manajemen), bisa menggali lebih dalam tanpa membuat tim merasa disalahkan. EQ + skeptisisme sehat.",
-      waspadai:"Menerima estimasi begitu saja, atau sebaliknya langsung memaksa tim memangkas. Tidak menyadari ada tekanan psikologis di balik angka yang diberikan tim.", signal:null ,
+      cari:"Membaca kenapa estimasi mungkin optimistis (tekanan manajemen), menggali tanpa mempermalukan tim. EQ + skeptisisme sehat.",
+      waspadai:"Terima buta, atau memaksa pangkas. Abai tekanan psikologis di balik estimasi.",
+      context_note: 'Dalam proyek IT, tim teknis (developer, engineer) biasanya yang memberikan estimasi berapa lama suatu pekerjaan akan selesai. Sebagai PM yang bukan berlatar teknis, Anda tidak bisa menilai apakah estimasi itu realistis dari sisi teknis — tapi Anda tetap bertanggung jawab atas timeline keseluruhan proyek.', signal:null ,
       calibration_warning: { type: 'context', label: 'Konteks terbatas — wajar untuk fresh grad', color: 'blue', text: 'Fresh grad belum punya feel untuk memperkirakan waktu pengerjaan teknis. Yang dinilai: apakah sadar estimasi punya bias, dan apakah bisa menggali tanpa mempermalukan tim. Bukan akurasi estimasinya sendiri.' } },
     { id:"UC_2_9", title:"Status 'Aman' yang Mencurigakan", klaster:"A/C",
       prompt:"Setiap laporan mingguan, satu anggota tim selalu melaporkan statusnya 'aman'. Tapi Anda perhatikan ia mulai jarang hadir di pertemuan harian dan jawabannya makin pendek.\n\nDua jalan:\n1. Dekati secara personal & tidak menghakimi untuk memahami kondisi sebenarnya.\n2. Fokus ke pekerjaan — minta ia tunjukkan progres konkret di pertemuan berikutnya.\n\nPilih satu dan jelaskan: kenapa pilihan itu, dan konsekuensi apa yang Anda terima?",
       trap:"Belakangan diketahui anggota ini sedang menghadapi masalah pribadi yang ia tutupi.",
       cari:"Membaca sinyal + mendekati dengan empati & aman; menyeimbangkan empati dengan kebutuhan proyek.",
-      waspadai:"Mempercayai laporan begitu saja padahal ada sinyal yang tidak sesuai. Atau menegur langsung di forum bersama yang justru memperburuk situasi.", signal:null },
+      waspadai:"Percaya laporan buta (abai ketidakcocokan sinyal) atau tegur di forum.", signal:null },
     { id:"UC_2_10", title:"Permintaan Bertentangan", klaster:"A/B",
-      prompt:"Di tengah proyek, stakeholder meminta: tambah beberapa fitur baru, tapi tenggat dan budget tidak boleh berubah.\n\nDua jalan:\n1. Sajikan trade-off konkret (sesuatu harus mengalah: sebagian pekerjaan lain yang sudah direncanakan harus dilepas, waktu mundur, atau sumber daya ditambah) dan minta stakeholder memutuskan.\n2. Cari dulu apakah ada fitur existing yang bisa ditunda agar yang baru muat, baru bawa opsi itu ke stakeholder.\n\nPilih satu dan jelaskan: kenapa pilihan itu, dan konsekuensi apa yang Anda terima?",
+      prompt:"Di tengah proyek, stakeholder meminta: tambah beberapa fitur baru, tapi tenggat dan budget tidak boleh berubah.\n\nDua jalan:\n1. Sajikan trade-off konkret (sesuatu harus mengalah: scope lain dipotong, waktu mundur, atau sumber daya ditambah) dan minta stakeholder memutuskan.\n2. Cari dulu apakah ada fitur existing yang bisa ditunda agar yang baru muat, baru bawa opsi itu ke stakeholder.\n\nPilih satu dan jelaskan: kenapa pilihan itu, dan konsekuensi apa yang Anda terima?",
       trap:"Stakeholder ini adalah sponsor utama proyek — kalau kecewa, dukungan proyek bisa goyah. Tapi tim sudah bekerja di kapasitas penuh.",
       cari:"Tangkap dua tekanan (politik sponsor + lindungi tim): datang dengan solusi, jaga muka sponsor sambil lindungi kapasitas tim.",
-      waspadai:"Langsung menyanggupi permintaan tanpa mempertimbangkan kapasitas tim. Atau menolak mentah tanpa memikirkan konsekuensi ke hubungan dengan sponsor proyek.", signal:null ,
+      waspadai:"Sanggupi tanpa syarat (abai kapasitas tim) atau tolak mentah (abai politik sponsor).", signal:null ,
       calibration_warning: { type: 'score3ok', label: 'Score 3 sudah bagus di UC ini', color: 'green', text: 'Fresh grad belum pernah jadi buffer antara sponsor dan kapasitas tim. Score 3 yang sadar ada dua sisi dan tidak menyanggupi membabi buta sudah cukup bagus. Score 5 kalau bisa navigasi keduanya dengan konkret.' } }
   ],
   stage3: [
@@ -116,7 +119,7 @@ export const BANK = {
       waspadai:"Menelan brief apa adanya & langsung menjawab. Atau lumpuh — hanya daftar keluhan info kurang.",
       signal:"PM: klarifikasi condong 'kapan, siapa, batasannya apa'. Product: seluruh dokumen mempertanyakan 'apakah ini solusi tepat' tanpa bergerak." },
     { id:"UC_3_2", title:"Prioritisasi dari Daftar Kacau", klaster:"A",
-      prompt:"Lampiran: daftar 12 pekerjaan acak (campur penting & sepele, beberapa harus dikerjakan berurutan karena saling bergantung, beberapa 'permintaan VIP'):\n\n1. Update dokumen SOP yang sudah lama\n2. Persiapkan laporan bulanan untuk direktur (minggu depan)\n3. Balas email vendor yang sudah 3 hari menunggu\n4. Setup environment testing untuk fitur baru\n5. Rapat koordinasi dengan tim bisnis (permintaan VP)\n6. Review spesifikasi teknis dari analis\n7. Follow-up approval anggaran yang tertunda\n8. Update Jira/task tracker\n9. Demo fitur ke stakeholder (dijadwalkan besok)\n10. Investigasi bug yang dilaporkan user kemarin\n11. Susun agenda rapat berikutnya\n12. Baca dokumentasi sistem lama untuk pemahaman\n\nTugas: Susun urutan pengerjaan 2 minggu pertama dan jelaskan dasar prioritas Anda.",
+      prompt:"Lampiran: daftar 12 pekerjaan acak (campur penting & sepele, beberapa saling bergantung, beberapa 'permintaan VIP'):\n\n1. Update dokumen SOP yang sudah lama\n2. Persiapkan laporan bulanan untuk direktur (minggu depan)\n3. Balas email vendor yang sudah 3 hari menunggu\n4. Setup environment testing untuk fitur baru\n5. Rapat koordinasi dengan tim bisnis (permintaan VP)\n6. Review spesifikasi teknis dari analis\n7. Follow-up approval anggaran yang tertunda\n8. Update Jira/task tracker\n9. Demo fitur ke stakeholder (dijadwalkan besok)\n10. Investigasi bug yang dilaporkan user kemarin\n11. Susun agenda rapat berikutnya\n12. Baca dokumentasi sistem lama untuk pemahaman\n\nTugas: Susun urutan pengerjaan 2 minggu pertama dan jelaskan dasar prioritas Anda.",
       cari:"Memprioritaskan berdasar dampak + ketergantungan. Berani menunda 'VIP' dengan alasan jernih.",
       waspadai:"Mengurut berdasar urutan daftar/yang mudah. Atau menuruti VIP tanpa pertimbangan.", signal:null },
     { id:"UC_3_3", title:"Membaca Situasi dari Komunikasi", klaster:"A",
@@ -133,22 +136,24 @@ export const BANK = {
       cari:"Dua versi benar-benar disesuaikan audiens: eksekutif dapat implikasi & keputusan tanpa jargon; teknis dapat detail actionable. Jujur soal masalah + sajikan rencana.",
       waspadai:"Dua versi nyaris sama. Atau menutupi keterlambatan. Atau penuh jargon untuk audiens bisnis.", signal:null },
     { id:"UC_3_6", title:"Keputusan di Bawah Tekanan Waktu", klaster:"A/C",
-      prompt:"Hari ini H-14 sebelum rilis. Ada dua opsi yang harus Anda putuskan sekarang:\n\nOpsi A: Rilis tepat waktu, tapi potong 1 fitur pelaporan (fitur ini diminta tapi tidak ada dalam kesepakatan kerja awal yang sudah ditandatangani).\n\nOpsi B: Tunda rilis 2 minggu, semua fitur lengkap (termasuk fitur pelaporan yang diminta kemudian).\n\nTugas: Pilih satu opsi, jelaskan alasan Anda, dan tuliskan bagaimana Anda mengomunikasikan keputusan ini ke stakeholder.\n\n(Brief ini sengaja tidak lengkap. Tuliskan asumsi Anda.)",
+      prompt:"Hari ini H-14 sebelum rilis. Ada dua opsi yang harus Anda putuskan sekarang:\n\nOpsi A: Rilis tepat waktu, tapi potong 1 fitur pelaporan (fitur ini diminta tapi tidak ada di SOW asli).\n\nOpsi B: Tunda rilis 2 minggu, semua fitur lengkap (termasuk fitur pelaporan yang diminta kemudian).\n\nTugas: Pilih satu opsi, jelaskan alasan Anda, dan tuliskan bagaimana Anda mengomunikasikan keputusan ini ke stakeholder.\n\n(Brief ini sengaja tidak lengkap. Tuliskan asumsi Anda.)",
       cari:"Memilih tegas dengan alasan berbasis dampak. Mengakui konsekuensi opsi yang ditinggalkan. Menyiapkan komunikasi jujur + rencana ke stakeholder.",
       waspadai:"Menolak memilih ('butuh info lebih dulu' tanpa batas). Atau memilih tanpa alasan.", signal:null },
     { id:"UC_3_7", title:"Menemukan Lubang dalam Rencana", klaster:"A/D",
       prompt:"Lampiran: rencana proyek implementasi sistem absensi digital, 8 minggu:\n\nMinggu 1–2: Analisa kebutuhan (PIC: Budi)\nMinggu 2–3: Desain sistem (PIC: Budi)\nMinggu 3–5: Development (PIC: Vendor)\nMinggu 4–5: Testing & UAT (PIC: Budi + Tim HR)\nMinggu 6: Training user (PIC: Budi)\nMinggu 7–8: Go-live & stabilisasi (PIC: Budi + Vendor)\n\nTugas: Identifikasi masalah atau risiko tersembunyi dalam rencana ini dan usulkan perbaikannya.",
       cari:"Menemukan cacat tersembunyi (Budi over-allocated di minggu 4-5, Testing & Development overlap, UAT terlalu mepet go-live), menjelaskan kenapa berbahaya, mengusulkan perbaikan realistis.",
-      waspadai:"Menerima rencana sebagai 'sudah baik'. Hanya temukan 1 masalah paling kasar.", signal:null ,
+      waspadai:"Menerima rencana sebagai 'sudah baik'. Hanya temukan 1 masalah paling kasar.",
+      context_note: 'Dalam proyek IT, sebelum sistem diserahkan ke pengguna biasanya ada fase UAT (User Acceptance Testing) — proses di mana pengguna mencoba sistem dan memastikan semua berjalan sesuai kebutuhan. Selain itu, satu orang yang dialokasikan ke terlalu banyak pekerjaan sekaligus (over-allocation) adalah risiko umum yang sering terlewat dalam perencanaan.', signal:null ,
       calibration_warning: { type: 'score3ok', label: 'Score 3 sudah bagus di UC ini', color: 'green', text: 'Fresh grad mungkin hanya menemukan 1–2 masalah dari rencana. Nilai kualitas analisisnya: apakah penjelasan kenapa itu berbahaya masuk akal? Bukan kuantitas temuan. Senior pun kadang butuh waktu untuk lihat semuanya.' } },
     { id:"UC_3_8", title:"Menangani Permintaan Perubahan", klaster:"A/C",
-      prompt:"Lampiran: email dari stakeholder:\n\n\"Dear [nama PM],\n\nSetelah melihat demo kemarin, kami ingin menambahkan fitur export ke Excel di semua laporan. Ini penting sekali untuk operasional kami. Bisa dimasukkan ke rilis bulan depan ya? Terima kasih.\"\n\nKonteks: Ruang lingkup proyek sudah dikunci dan ditandatangani sebelumnya. Fitur export ke Excel tidak ada dalam kesepakatan awal.\n\nTugas: Tulis bagaimana Anda menanggapi email ini. Boleh dalam bentuk draf balasan + catatan langkah internal yang akan Anda ambil.",
+      prompt:"Lampiran: email dari stakeholder:\n\n\"Dear [nama PM],\n\nSetelah melihat demo kemarin, kami ingin menambahkan fitur export ke Excel di semua laporan. Ini penting sekali untuk operasional kami. Bisa dimasukkan ke rilis bulan depan ya? Terima kasih.\"\n\nKonteks: Ruang lingkup proyek sudah dikunci dan ditandatangani sebelumnya. Tidak ada fitur export di SOW.\n\nTugas: Tulis bagaimana Anda menanggapi email ini. Boleh dalam bentuk draf balasan + catatan langkah internal yang akan Anda ambil.",
       cari:"Menghormati komitmen yang dikunci, menggali kebutuhan sebenarnya, menjelaskan dampak & jalur perubahan dengan empati. Jaga hubungan + tetap disiplin.",
-      waspadai:"Langsung mengiyakan (kesepakatan ruang lingkup dianggap bisa berubah kapan saja), atau menolak kasar tanpa menjaga hubungan.", signal:null },
+      waspadai:"Langsung mengiyakan (scope dianggap cair), atau menolak kasar tanpa menjaga hubungan.", signal:null },
     { id:"UC_3_9", title:"Mengoordinasi Pihak yang Tak Sinkron", klaster:"B",
       prompt:"Anda baru bergabung sebagai PM di proyek yang sudah berjalan 3 minggu. Setelah berbicara dengan tiga pihak, Anda temukan:\n\n• Tim teknis mengira scope-nya adalah sistem A + B\n• Vendor mengira hanya sistem A yang perlu dikerjakan\n• User bisnis mengira akan mendapat sistem A + B + C\n\nTugas: Tuliskan bagaimana Anda menyamakan pemahaman ketiga pihak ini, dan langkah konkret apa yang Anda ambil.\n\n(Brief ini sengaja tidak lengkap. Tuliskan asumsi Anda.)",
       cari:"Merancang cara menyatukan pemahaman (sumber kebenaran tunggal, konfirmasi tertulis) DAN mekanisme agar tetap sinkron ke depan.",
-      waspadai:"Hanya menyalahkan salah satu pihak. Atau solusinya kabur ('akan saya koordinasikan') tanpa langkah nyata.", signal:null ,
+      waspadai:"Hanya menyalahkan salah satu pihak. Atau solusinya kabur ('akan saya koordinasikan') tanpa langkah nyata.",
+      context_note: 'Bayangkan Anda baru bergabung sebagai PM di sebuah proyek yang sudah berjalan beberapa minggu. Anda belum terlibat dari awal, tapi sekarang jadi penanggung jawabnya. Situasi seperti ini sering terjadi di dunia kerja nyata — dan tantangannya adalah menyamakan pemahaman semua pihak yang sudah punya asumsi masing-masing.', signal:null ,
       calibration_warning: { type: 'context', label: 'Konteks terbatas — wajar untuk fresh grad', color: 'blue', text: 'Fresh grad belum pernah menjadi PM yang masuk di tengah jalan saat semua orang sudah punya asumsi berbeda. Nilai kejelasan berpikir dan langkah pragmatisnya — bukan teknis change management yang memang belum dipelajari.' } },
     { id:"UC_3_10", title:"Refleksi (wajib semua varian)", klaster:"C",
       prompt:"Setelah menyelesaikan tugas di atas, tambahkan satu paragraf singkat:\n\n\"Jika Anda punya waktu atau informasi lebih, apa yang akan Anda lakukan berbeda? Dan bagian mana dari jawaban Anda yang paling tidak Anda yakini?\"",
@@ -172,7 +177,8 @@ export const BANK = {
     { id:"UC_4_4", title:"Tekanan Stakeholder", klaster:"B/D",
       prompt:"[Role-play] Pewawancara berperan sebagai stakeholder bisnis yang kecewa:\n\n'Kenapa proyek ini lambat? Saya tidak mau dengar alasan teknis.'\n\nCatatan: mainkan tekanan secukupnya — tujuan melihat ketahanan, bukan membuat kandidat gagal.",
       cari:"Tenang, mengakui kekhawatiran, menerjemahkan ke bahasa dampak bisnis (bukan alasan teknis), menawarkan langkah konkret. Memegang kendali tanpa konfrontasi maupun menyerah.",
-      waspadai:"Panik/defensif, menyalahkan tim teknis, atau menjanjikan hal mustahil untuk meredakan.", signal:null ,
+      waspadai:"Panik/defensif, menyalahkan tim teknis, atau menjanjikan hal mustahil untuk meredakan.",
+      context_note: 'Dalam skenario ini, Anda akan berhadapan langsung dengan pewawancara yang berperan sebagai stakeholder (pemangku kepentingan) bisnis yang kecewa. Stakeholder adalah pihak yang berkepentingan dengan proyek — bisa atasan, klien internal, atau kepala divisi. Tidak perlu hafal jawaban sempurna; yang dinilai adalah cara Anda menghadapi tekanan dan menjaga komunikasi tetap konstruktif.', signal:null ,
       calibration_warning: { type: 'delivery', label: 'Nilai substansi, bukan cara penyampaian', color: 'purple', text: 'Wajar grogi saat role-play pertama menghadapi stakeholder marah. Nilai substansi respons-nya: apakah ada kesadaran untuk terjemahkan ke bahasa dampak bisnis dan tawarkan langkah konkret? Bukan kelancaran atau ketenangan delivery-nya.' } },
     { id:"UC_4_5", title:"Pertanyaan Pertama Mereka", klaster:"A", mechanism:"M4",
       prompt:"'Saya beri Anda proyek baru sekarang: Buat sistem untuk membantu tim HR.' Itu saja informasinya. Apa 5 pertanyaan pertama yang Anda ajukan?",
@@ -182,7 +188,8 @@ export const BANK = {
     { id:"UC_4_6", title:"Menyampaikan Kabar Buruk", klaster:"C/D",
       prompt:"[Role-play] 'Saya stakeholder-nya. Anda harus memberi tahu saya bahwa proyek akan telat. Sampaikan.'",
       cari:"Menyampaikan lebih awal, jujur, dengan konteks & dampak jelas, langsung disertai rencana/opsi pemulihan. Mengambil tanggung jawab tanpa melempar kesalahan.",
-      waspadai:"Menunda/mengaburkan kabar. Menyalahkan pihak lain. Atau menyampaikan tanpa rencana ke depan.", signal:null ,
+      waspadai:"Menunda/mengaburkan kabar. Menyalahkan pihak lain. Atau menyampaikan tanpa rencana ke depan.",
+      context_note: 'Menyampaikan kabar buruk ke stakeholder adalah salah satu momen paling tidak nyaman dalam pekerjaan PM — dan juga salah satu yang paling penting. Dalam skenario ini, Anda akan langsung mempraktikkannya dengan pewawancara sebagai stakeholder. Fokus pada kejujuran dan rencana ke depan, bukan mencari alasan.', signal:null ,
       calibration_warning: { type: 'delivery', label: 'Nilai substansi, bukan cara penyampaian', color: 'purple', text: 'Fresh grad sering nervous saat role-play kabar buruk. Nilai keberanian untuk jujur dan apakah ada rencana ke depan yang ditawarkan — bukan kepolisan atau cara penyampaiannya.' } },
     { id:"UC_4_7", title:"Coachability Real-Time", klaster:"C",
       prompt:"[Setelah role-play, beri feedback langsung]\n\n'Tadi caramu menangani [bagian X] kurang tepat menurut saya — mestinya [alternatif Y]. Apa pendapatmu?'\n\n(Isi [X] dan [Y] dari role-play yang baru saja terjadi. Ini satu-satunya UC yang harus diimprovisasi.)",
@@ -222,4 +229,50 @@ export function getActiveUCs(stage) {
 
 export function getAllUCs(stage) {
   return BANK[`stage${stage}`];
+}
+
+// ── ROTATION SETS ──────────────────────────────────────
+// Setiap set adalah kombinasi UC yang bisa dipakai per batch.
+// Rotasi otomatis berdasarkan jumlah batch yang sudah ada.
+// UC_3_10 (index 9) selalu wajib di Stage 3, tidak dirotasi.
+export const ROTATION_SETS = [
+  // Set A — default
+  { stage1: [0, 1, 3, 5, 7], stage2: [0, 1, 2, 3, 4, 6, 8], stage3: 0, stage4: [0, 1, 2, 3, 4, 5, 6] },
+  // Set B
+  { stage1: [1, 2, 4, 6, 8], stage2: [0, 1, 3, 4, 5, 7, 9], stage3: 1, stage4: [0, 1, 2, 3, 5, 6, 7] },
+  // Set C
+  { stage1: [0, 2, 3, 6, 9], stage2: [0, 2, 3, 5, 6, 7, 9], stage3: 2, stage4: [0, 1, 2, 4, 5, 6, 8] },
+  // Set D
+  { stage1: [1, 3, 4, 7, 8], stage2: [1, 2, 4, 5, 6, 8, 9], stage3: 3, stage4: [0, 1, 3, 4, 5, 7, 8] },
+  // Set E
+  { stage1: [0, 2, 5, 6, 9], stage2: [0, 1, 2, 4, 7, 8, 9], stage3: 4, stage4: [0, 2, 3, 4, 6, 7, 9] },
+  // Set F
+  { stage1: [1, 2, 3, 7, 9], stage2: [1, 3, 4, 5, 6, 7, 8], stage3: 5, stage4: [1, 2, 3, 4, 5, 8, 9] },
+];
+
+export function getRotationSet(batchCount) {
+  return ROTATION_SETS[batchCount % ROTATION_SETS.length];
+}
+
+export function getUCsFromSet(set) {
+  return {
+    stage1: set.stage1.map(i => BANK.stage1[i].id),
+    stage2: set.stage2.map(i => BANK.stage2[i].id),
+    stage3: BANK.stage3[set.stage3].id,
+    stage4: set.stage4.map(i => BANK.stage4[i].id),
+  };
+}
+
+export function getActiveUCsFromBatch(batch) {
+  // Ambil UC dari data batch yang tersimpan di Supabase
+  if (!batch) return null;
+  return {
+    stage1: (batch.stage1_ucs || []).map(id => BANK.stage1.find(uc => uc.id === id)).filter(Boolean),
+    stage2: (batch.stage2_ucs || []).map(id => BANK.stage2.find(uc => uc.id === id)).filter(Boolean),
+    stage3: [
+      BANK.stage3.find(uc => uc.id === batch.stage3_uc),
+      BANK.stage3[9], // UC_3_10 selalu wajib
+    ].filter(Boolean),
+    stage4: (batch.stage4_ucs || []).map(id => BANK.stage4.find(uc => uc.id === id)).filter(Boolean),
+  };
 }

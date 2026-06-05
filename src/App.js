@@ -12,23 +12,21 @@ const Icon = {
   database: <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><ellipse cx="12" cy="5" rx="9" ry="3"/><path d="M21 12c0 1.66-4 3-9 3s-9-1.34-9-3"/><path d="M3 5v14c0 1.66 4 3 9 3s9-1.34 9-3V5"/></svg>,
   robot: <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><rect x="3" y="8" width="18" height="12" rx="2"/><path d="M12 8V4M8 4h8M6 12h.01M18 12h.01M9 16h6"/><path d="M12 2v2"/></svg>,
   user: <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M20 21v-2a4 4 0 00-4-4H8a4 4 0 00-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>,
-  refresh: <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M23 4v6h-6M1 20v-6h6"/><path d="M3.51 9a9 9 0 0114.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0020.49 15"/></svg>,
   menu: <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="18" x2="21" y2="18"/></svg>,
   x: <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M18 6L6 18M6 6l12 12"/></svg>,
   changelog: <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/><polyline points="10 9 9 9 8 9"/></svg>,
 };
 
-function Sidebar({ view, onNav, onRefresh, loading, open, onClose }) {
+function Sidebar({ view, onNav, open, onClose }) {
   const navItems = [
     { key: 'dashboard', icon: Icon.home, label: 'Dashboard' },
     { key: 'bank', icon: Icon.database, label: 'Bank Soal' },
     { key: 'evaluasi', icon: Icon.robot, label: 'Evaluasi AI' },
     { key: 'profile', icon: Icon.user, label: 'Profil Kandidat' },
-  ];
-
-  const sysItems = [
     { key: 'changelog', icon: Icon.changelog, label: 'Changelog' },
   ];
+
+
 
   function handleNav(key) {
     onNav(key);
@@ -57,25 +55,7 @@ function Sidebar({ view, onNav, onRefresh, loading, open, onClose }) {
               </button>
             ))}
           </div>
-          <div className="nav-section">
-            <div className="nav-section-title">Sistem</div>
-            {sysItems.map(item => (
-              <button
-                key={item.key}
-                className={`nav-item ${view === item.key ? 'active' : ''}`}
-                onClick={() => handleNav(item.key)}
-              >
-                {item.icon}
-                {item.label}
-              </button>
-            ))}
-            <button className="nav-item" onClick={onRefresh} disabled={loading}>
-              <span style={{ display: 'flex', alignItems: 'center', gap: 8, opacity: loading ? 0.5 : 1 }}>
-                {Icon.refresh}
-                {loading ? 'Memuat...' : 'Refresh Data'}
-              </span>
-            </button>
-          </div>
+
         </nav>
         <div className="sidebar-footer">
           <div style={{ fontWeight: 600, marginBottom: 2 }}>AI sebagai pembantu</div>
@@ -212,8 +192,6 @@ export default function App() {
       <Sidebar
         view={view}
         onNav={handleNav}
-        onRefresh={loadData}
-        loading={loading}
         open={sidebarOpen}
         onClose={() => setSidebarOpen(false)}
       />

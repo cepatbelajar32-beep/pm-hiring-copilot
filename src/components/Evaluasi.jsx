@@ -155,6 +155,27 @@ function UCCard({ uc, stage, candidateId, existingAnswer, existingEval, onEvalSa
         )}
       </div>
 
+      {/* Context note untuk kandidat — penjelasan konteks sebelum soal */}
+      {uc.context_note && (
+        <div style={{
+          background: '#F0F9FF',
+          border: '1px solid #BAE6FD',
+          borderLeft: '4px solid #0EA5E9',
+          borderRadius: 8,
+          padding: '10px 14px',
+          marginBottom: 10,
+          fontSize: 13,
+          color: '#0C4A6E',
+          lineHeight: 1.65,
+        }}>
+          <div style={{ fontWeight: 700, fontSize: 11, textTransform: 'uppercase',
+            letterSpacing: '0.07em', marginBottom: 5, color: '#0369A1' }}>
+            📋 Konteks untuk kandidat
+          </div>
+          {uc.context_note}
+        </div>
+      )}
+
       <div className="uc-prompt">{uc.prompt}</div>
 
       {uc.trap && (

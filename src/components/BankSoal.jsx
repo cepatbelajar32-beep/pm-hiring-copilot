@@ -103,6 +103,22 @@ export default function BankSoal() {
             {isExpanded && (
               <div style={{ marginTop: 12 }}>
                 <div style={{ fontWeight: 600, fontSize: 12, color: '#4B5563', marginBottom: 6 }}>Prompt lengkap:</div>
+
+                {uc.context_note && (
+                  <div style={{
+                    background: '#F0F9FF', border: '1px solid #BAE6FD',
+                    borderLeft: '4px solid #0EA5E9', borderRadius: 8,
+                    padding: '10px 14px', marginBottom: 10, fontSize: 13,
+                    color: '#0C4A6E', lineHeight: 1.65,
+                  }}>
+                    <div style={{ fontWeight: 700, fontSize: 11, textTransform: 'uppercase',
+                      letterSpacing: '0.07em', marginBottom: 5, color: '#0369A1' }}>
+                      📋 Konteks untuk kandidat
+                    </div>
+                    {uc.context_note}
+                  </div>
+                )}
+
                 <div className="uc-prompt">{uc.prompt}</div>
 
                 {uc.trap && (
