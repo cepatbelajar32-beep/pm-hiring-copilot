@@ -14,6 +14,42 @@ async function saveDraftToDB(candidateId, ucId, score, note) {
   if (error) throw error;
 }
 
+// ── CalibrationWarning ───────────────────────────────
+const WARNING_STYLES = {
+  context:  { bg:'#EBF4FA', border:'#2E75B6', icon:'⚠', label_color:'#0C447C', text_color:'#1F3864' },
+  scale:    { bg:'#FBF3D5', border:'#BF8F00', icon:'📏', label_color:'#633806', text_color:'#4B3500' },
+  score3ok: { bg:'#E2EFDA', border:'#548235', icon:'✓', label_color:'#27500A', text_color:'#1F3A0A' },
+  delivery: { bg:'#EEEDFE', border:'#534AB7', icon:'🎯', label_color:'#3C3489', text_color:'#26215C' },
+};
+
+function CalibrationWarning({ w }) {
+  const style = WARNING_STYLES[w.type] || WARNING_STYLES.context;
+  return (
+    <div style={{
+      background: style.bg,
+      border: `1px solid ${style.border}`,
+      borderLeft: `4px solid ${style.border}`,
+      borderRadius: 8,
+      padding: '10px 14px',
+      marginTop: 10,
+      marginBottom: 4,
+    }}>
+      <div style={{ display:'flex', alignItems:'center', gap:6, marginBottom:5 }}>
+        <span style={{ fontSize:14 }}>{style.icon}</span>
+        <span style={{
+          fontSize: 11, fontWeight: 800, color: style.label_color,
+          textTransform: 'uppercase', letterSpacing: '0.07em'
+        }}>
+          Kalibrasi Penilai — {w.label}
+        </span>
+      </div>
+      <div style={{ fontSize: 13, color: style.text_color, lineHeight: 1.6 }}>
+        {w.text}
+      </div>
+    </div>
+  );
+}
+
 // ── UCCard ────────────────────────────────────────────
 function UCCard({ uc, stage, candidateId, existingAnswer, existingEval, onEvalSaved }) {
   const [answer, setAnswer]           = useState('');
@@ -130,6 +166,9 @@ function UCCard({ uc, stage, candidateId, existingAnswer, existingEval, onEvalSa
         <span className="uc-waspadai"><strong>Waspadai:</strong> {uc.waspadai}</span>
         {uc.signal && <span style={{ color:'#2E75B6' }}><strong>Sinyal:</strong> {uc.signal}</span>}
       </div>
+
+      {/* Calibration Warning */}
+      {uc.calibration_warning && <CalibrationWarning w={uc.calibration_warning} />}
 
       {/* Jawaban */}
       <div className="field" style={{ marginTop:14 }}>

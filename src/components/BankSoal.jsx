@@ -128,6 +128,38 @@ export default function BankSoal() {
                     <span style={{ color: '#374151' }}>{uc.signal}</span>
                   </div>
                 )}
+
+                {uc.calibration_warning && (
+                  <div style={{
+                    background: uc.calibration_warning.type === 'score3ok' ? '#E2EFDA'
+                      : uc.calibration_warning.type === 'scale' ? '#FBF3D5'
+                      : uc.calibration_warning.type === 'delivery' ? '#EEEDFE'
+                      : '#EBF4FA',
+                    border: `1px solid ${
+                      uc.calibration_warning.type === 'score3ok' ? '#548235'
+                      : uc.calibration_warning.type === 'scale' ? '#BF8F00'
+                      : uc.calibration_warning.type === 'delivery' ? '#534AB7'
+                      : '#2E75B6'}`,
+                    borderLeft: `4px solid ${
+                      uc.calibration_warning.type === 'score3ok' ? '#548235'
+                      : uc.calibration_warning.type === 'scale' ? '#BF8F00'
+                      : uc.calibration_warning.type === 'delivery' ? '#534AB7'
+                      : '#2E75B6'}`,
+                    borderRadius: 8, padding: '10px 14px', marginTop: 10,
+                  }}>
+                    <div style={{ fontSize: 11, fontWeight: 800, textTransform: 'uppercase', letterSpacing: '0.07em',
+                      color: uc.calibration_warning.type === 'score3ok' ? '#27500A'
+                        : uc.calibration_warning.type === 'scale' ? '#633806'
+                        : uc.calibration_warning.type === 'delivery' ? '#3C3489'
+                        : '#0C447C',
+                      marginBottom: 5 }}>
+                      ⚠ Kalibrasi Penilai — {uc.calibration_warning.label}
+                    </div>
+                    <div style={{ fontSize: 13, color: '#374151', lineHeight: 1.6 }}>
+                      {uc.calibration_warning.text}
+                    </div>
+                  </div>
+                )}
               </div>
             )}
           </div>
