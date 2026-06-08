@@ -105,10 +105,12 @@ export async function analyzeConsistency(candidate, allAnswers, allEvals) {
   const systemPrompt = `Kamu adalah analis rekrutmen berpengalaman yang menilai konsistensi dan keaslian jawaban kandidat secara menyeluruh.
 
 Tugasmu: baca SEMUA jawaban kandidat berikut secara bersamaan, lalu identifikasi:
-1. Apakah ada kontradiksi antar jawaban — misalnya di satu jawaban klaim selalu bertanggung jawab, tapi di jawaban lain semua masalah disebabkan orang lain
-2. Apakah ada pola membual atau melebih-lebihkan yang terlihat dari keseluruhan jawaban
-3. Apakah kandidat konsisten menyembunyikan kontribusi individualnya di semua jawaban, atau hanya di sebagian
-4. Apakah ada jawaban yang terasa seperti di-generate AI atau dihafal dari template — berbeda gaya dengan jawaban lainnya
+1. Kontradiksi antar jawaban — misalnya klaim selalu bertanggung jawab di satu jawaban, tapi semua masalah disebabkan orang lain di jawaban lain
+2. Klaim yang runtuh saat didalami — misalnya klaim besar di Stage 1 yang tidak didukung detail konkret di Stage 4 (terutama UC_1_1 vs UC_4_2). Ini sinyal terkuat kebohongan terselubung
+3. Pola membual sistematis — klaim pencapaian yang skalanya tidak masuk akal untuk fresh grad, angka spesifik yang tidak bisa dipertanggungjawabkan, atau deskripsi peran yang terlalu senior
+4. Pola menyembunyikan kontribusi — pakai "kami/tim" terus tapi tidak pernah bisa jelaskan kontribusi spesifiknya sendiri saat digali
+5. Jawaban terindikasi AI atau template — terlalu formal, terstruktur "pertama... kedua... ketiga", tidak ada keraguan atau ungkapan personal, gaya berbeda jauh dari jawaban lain
+6. Inkonsistensi ownership — di satu jawaban mengambil tanggung jawab penuh, di jawaban lain semua salah orang lain atau kondisi eksternal
 
 Berikan output HANYA dalam format JSON valid:
 {
@@ -123,7 +125,10 @@ Berikan output HANYA dalam format JSON valid:
   "exaggeration_signals": [
     {
       "uc_id": "UC_X_Y",
-      "description": "klaim spesifik yang terasa berlebihan dan alasannya"
+      "claim": "kutipan klaim yang dipertanyakan",
+      "reason": "mengapa klaim ini mencurigakan — terlalu besar, tidak didukung detail, atau runtuh saat didalami",
+      "collapse_uc": "UC yang membuktikan klaim ini runtuh (isi jika ada, null jika tidak)",
+      "severity": "ringan" atau "sedang" atau "kuat"
     }
   ],
   "individuality_pattern": null atau "kandidat konsisten menggunakan 'kami' di hampir semua jawaban tanpa pernah menjelaskan apa yang spesifik dia lakukan" atau penjelasan pola lain,
@@ -143,7 +148,9 @@ Berikan output HANYA dalam format JSON valid:
 Catatan:
 - Kosongkan array jika tidak ada temuan di kategori tersebut (jangan isi dengan asumsi)
 - Fokus pada bukti konkret dari teks jawaban, bukan spekulasi
-- Tone-nya adalah kolega yang membantu, bukan hakim`;
+- Tone-nya adalah kolega yang membantu, bukan hakim
+- Untuk exaggeration_signals: severity "kuat" hanya jika ada bukti klaim runtuh saat didalami (misalnya UC_1_1 klaim besar tapi UC_4_2 tidak bisa sebut satu detail konkret)
+- Jangan flag sesuatu sebagai exaggeration hanya karena skalanya besar — fresh grad yang aktif di organisasi bisa punya pencapaian nyata. Yang dicari adalah inkonsistensi antara klaim dan kemampuan menjelaskan detailnya`;
 
   return await callClaude(
     systemPrompt,

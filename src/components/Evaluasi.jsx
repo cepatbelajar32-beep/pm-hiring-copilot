@@ -3,6 +3,7 @@ import { ScoreBadge, DirectionBadge, Avatar, Spinner, FlagBadge, Alert } from '.
 import {
   getAnswers, getEvaluations, saveAnswer, saveEvaluation,
   confirmEvaluationByUC, updateCandidateStage, saveInterviewScript, getLatestScript,
+  saveConsistencyResult, getConsistencyResult, updateFinalDecision, getCandidateById,
   saveStage4UCs, getStage4UCs
 } from '../lib/supabase';
 import { evaluateAnswer, generateInterviewScript, analyzeConsistency } from '../lib/claude';
@@ -34,6 +35,30 @@ function CalibrationWarning({ w }) {
       </div>
       <div style={{ fontSize:13, color:style.text_color, lineHeight:1.6 }}>{w.text}</div>
     </div>
+  );
+}
+
+// ── UCTooltip — hover untuk lihat nama UC ────────────
+function UCTooltip({ ucId }) {
+  const [show, setShow] = useState(false);
+  const allUCs = [...BANK.stage1, ...BANK.stage2, ...BANK.stage3, ...BANK.stage4];
+  const uc = allUCs.find(u => u.id === ucId);
+  return (
+    <span style={{ position:'relative', display:'inline-block' }}
+      onMouseEnter={() => setShow(true)} onMouseLeave={() => setShow(false)}>
+      <span style={{ fontFamily:'monospace', fontSize:11, fontWeight:700, color:'#2E75B6',
+        background:'#EBF4FA', padding:'2px 7px', borderRadius:4, cursor:'default', borderBottom:'1px dashed #2E75B6' }}>
+        {ucId}
+      </span>
+      {show && uc && (
+        <div style={{ position:'absolute', bottom:'100%', left:0, marginBottom:4, zIndex:100,
+          background:'#1F2937', color:'white', fontSize:12, padding:'5px 10px', borderRadius:6,
+          whiteSpace:'nowrap', pointerEvents:'none', boxShadow:'0 2px 8px rgba(0,0,0,0.3)' }}>
+          {uc.title}
+          <div style={{ color:'#9CA3AF', fontSize:11 }}>Klaster {uc.klaster}</div>
+        </div>
+      )}
+    </span>
   );
 }
 
@@ -322,9 +347,9 @@ function PersiapanPanel({ candidate, batch, evals, script, onScriptGenerated, on
 }
 
 // ── Analisis Akhir ────────────────────────────────────
-function AnalisisAkhir({ candidate, answers, evals, onAIStart, onAIDone }) {
+function AnalisisAkhir({ candidate, answers, evals, savedConsistency, onConsistencyDone, onAIStart, onAIDone }) {
   const [loading, setLoading]     = useState(false);
-  const [result, setResult]       = useState(null);
+  const [result, setResult]       = useState(savedConsistency || null);
   const [error, setError]         = useState(null);
   const [sections, setSections]   = useState({
     ringkasan: true, konsistensi: false, keaslian: false,
@@ -371,6 +396,7 @@ function AnalisisAkhir({ candidate, answers, evals, onAIStart, onAIDone }) {
       const res = await analyzeConsistency(candidate, answers, evals);
       setResult(res);
       setSections(prev => ({ ...prev, konsistensi: true }));
+      onConsistencyDone && onConsistencyDone(res);
     } catch(e) { setError(e.message); }
     finally { setLoading(false); onAIDone && onAIDone(); }
   }
@@ -509,10 +535,44 @@ function AnalisisAkhir({ candidate, answers, evals, onAIStart, onAIDone }) {
             })()}
             {(result.contradictions||[]).map((c,i) => (
               <div key={i} style={{ padding:'10px 14px', background:'#FBE4E4', borderRadius:8, marginBottom:8, fontSize:13 }}>
-                <div style={{ fontWeight:600, color:'#C00000', marginBottom:4 }}>{(c.uc_ids||[]).join(' ↔ ')}</div>
+                <div style={{ fontWeight:600, color:'#C00000', marginBottom:4 }}>
+                  {(c.uc_ids||[]).map(id => <UCTooltip key={id} ucId={id} />)}
+                </div>
                 <div style={{ color:'#374151', lineHeight:1.6 }}>{c.description}</div>
               </div>
             ))}
+
+            {/* Exaggeration signals */}
+            {(result.exaggeration_signals||[]).length > 0 && (
+              <div style={{ marginTop:12 }}>
+                <div style={{ fontWeight:700, fontSize:13, color:'#C00000', marginBottom:8 }}>📢 Sinyal membesar-besarkan / berbohong</div>
+                {(result.exaggeration_signals||[]).map((s,i) => {
+                  const severityColor = s.severity==='kuat' ? {bg:'#FBE4E4',border:'#C00000',color:'#C00000'} :
+                    s.severity==='sedang' ? {bg:'#FBF3D5',border:'#BF8F00',color:'#BF8F00'} :
+                    {bg:'#F9FAFB',border:'#D1D5DB',color:'#6B7280'};
+                  return (
+                    <div key={i} style={{ padding:'10px 14px', background:severityColor.bg,
+                      border:`1px solid ${severityColor.border}`, borderLeft:`3px solid ${severityColor.border}`,
+                      borderRadius:8, marginBottom:8, fontSize:13 }}>
+                      <div style={{ display:'flex', gap:8, alignItems:'center', marginBottom:4 }}>
+                        <UCTooltip ucId={s.uc_id} />
+                        <span style={{ fontSize:11, fontWeight:700, color:severityColor.color,
+                          background:'white', padding:'1px 7px', borderRadius:4, border:`1px solid ${severityColor.border}` }}>
+                          {s.severity === 'kuat' ? '🚩 Kuat' : s.severity === 'sedang' ? '⚠ Sedang' : '○ Ringan'}
+                        </span>
+                        {s.collapse_uc && (
+                          <span style={{ fontSize:12, color:'#9CA3AF' }}>
+                            Runtuh di: <UCTooltip ucId={s.collapse_uc} />
+                          </span>
+                        )}
+                      </div>
+                      {s.claim && <div style={{ fontStyle:'italic', color:'#374151', marginBottom:4 }}>"{s.claim}"</div>}
+                      <div style={{ color:'#374151', lineHeight:1.6 }}>{s.reason}</div>
+                    </div>
+                  );
+                })}
+              </div>
+            )}
             {result.individuality_pattern && (
               <div style={{ padding:'10px 14px', background:'#EBF4FA', border:'1px solid #2E75B6',
                 borderLeft:'3px solid #2E75B6', borderRadius:8, marginBottom:8, fontSize:13 }}>
@@ -606,6 +666,7 @@ export default function Evaluasi({ candidate, candidates, batch, onSelectCandida
   const [stage4UCs, setStage4UCs]     = useState(null); // UC Stage 4 per kandidat
   const [generatedScript, setGeneratedScript] = useState(null); // script dari generate
   const [isAIRunning, setIsAIRunning]         = useState(false); // lock navigasi tab saat AI proses
+  const [savedConsistency, setSavedConsistency] = useState(null); // hasil review konsistensi
 
   // Reset script saat kandidat berubah
   useEffect(() => { setGeneratedScript(null); }, [candidate?.id]);
@@ -614,45 +675,48 @@ export default function Evaluasi({ candidate, candidates, batch, onSelectCandida
     if (!candidate) return;
     setLoading(true);
     try {
-      const [a, e, s4, latestScript] = await Promise.all([
+      const [a, e, s4, latestScript, consistencyRes] = await Promise.all([
         getAnswers(candidate.id),
         getEvaluations(candidate.id),
         getStage4UCs(candidate.id),
         getLatestScript(candidate.id),
+        getConsistencyResult(candidate.id),
       ]);
       setAnswers(a || []);
       setEvals(e || []);
       setStage4UCs(s4 || null);
-      if (latestScript?.script_json) {
-        setGeneratedScript(latestScript.script_json);
-      }
+      if (latestScript?.script_json) setGeneratedScript(latestScript.script_json);
+      if (consistencyRes) setSavedConsistency(consistencyRes);
     } catch(err) { console.error(err); }
     finally { setLoading(false); }
   }, [candidate?.id]);
 
   useEffect(() => { loadData(); }, [loadData]);
 
-  // Auto-update current_stage — baca fresh dari DB setelah loadData
+  // Auto-update current_stage — baca current_stage dari DB untuk hindari stale prop
   async function handleEvalSaved(stageNum) {
-    // Load fresh data dulu
-    const { getEvaluations: fetchEvals } = await import('../lib/supabase');
-    const freshEvals = await fetchEvals(candidate.id);
-    
+    const { getEvaluations: fetchEvals, getAnswers: fetchAnswers } = await import('../lib/supabase');
+    const [freshEvals, freshAnswers, freshCandidate] = await Promise.all([
+      fetchEvals(candidate.id),
+      fetchAnswers(candidate.id),
+      getCandidateById(candidate.id),
+    ]);
+
     const activeUCs = getStageUCs(stageNum);
     const confirmedInStage = (freshEvals || []).filter(e => e.stage === stageNum && e.is_confirmed);
-    
+    const currentStageFromDB = freshCandidate?.current_stage || 1;
+
     if (activeUCs.length > 0 && confirmedInStage.length >= activeUCs.length) {
       const nextStage = stageNum + 1;
-      if (nextStage <= 4 && candidate.current_stage < nextStage) {
+      if (nextStage <= 4 && currentStageFromDB <= stageNum) {
         try {
           await updateCandidateStage(candidate.id, nextStage);
-          onRefresh && onRefresh(); // refresh kandidat di parent (Dashboard/App)
+          onRefresh && onRefresh();
         } catch(e) { console.error('Gagal update stage:', e); }
       }
     }
-    
-    // Update local state
-    setAnswers(await (await import('../lib/supabase')).getAnswers(candidate.id) || []);
+
+    setAnswers(freshAnswers || []);
     setEvals(freshEvals || []);
   }
 
@@ -823,6 +887,12 @@ export default function Evaluasi({ candidate, candidates, batch, onSelectCandida
           {/* Tab Analisis Akhir */}
           {activeStage === 'analisis' && (
             <AnalisisAkhir candidate={candidate} answers={answers} evals={evals}
+            savedConsistency={savedConsistency}
+            onConsistencyDone={async (result) => {
+              setSavedConsistency(result);
+              try { await saveConsistencyResult(candidate.id, result); }
+              catch(e) { console.warn('Gagal simpan konsistensi:', e.message); }
+            }}
             onAIStart={() => setIsAIRunning(true)}
             onAIDone={() => setIsAIRunning(false)} />
           )}

@@ -1,9 +1,51 @@
 import React, { useState, useEffect } from 'react';
 import { RadarChart, PolarGrid, PolarAngleAxis, Radar, ResponsiveContainer, Tooltip } from 'recharts';
-import { getEvaluations, getProfile, saveProfile } from '../lib/supabase';
+import { getEvaluations, getProfile, saveProfile, updateFinalDecision } from '../lib/supabase';
 import { generateCandidateProfile } from '../lib/claude';
 import { DirectionBadge, ScoreBadge, Avatar, Spinner, Alert } from './Shared';
 import { BANK } from '../data/bank';
+
+
+// ── UCTooltip ─────────────────────────────────────────
+function UCTooltip({ ucId }) {
+  const [show, setShow] = React.useState(false);
+  const allUCs = [...BANK.stage1, ...BANK.stage2, ...BANK.stage3, ...BANK.stage4];
+  const uc = allUCs.find(u => u.id === ucId);
+  if (!ucId) return null;
+  return (
+    <span style={{ position: 'relative', display: 'inline-block' }}
+      onMouseEnter={() => setShow(true)} onMouseLeave={() => setShow(false)}>
+      <span style={{ fontFamily: 'monospace', fontSize: 11, fontWeight: 700, color: '#2E75B6',
+        background: '#EBF4FA', padding: '2px 7px', borderRadius: 4, cursor: 'default',
+        borderBottom: '1px dashed #2E75B6' }}>
+        {ucId}
+      </span>
+      {show && uc && (
+        <div style={{ position: 'absolute', bottom: '100%', left: 0, marginBottom: 4, zIndex: 100,
+          background: '#1F2937', color: 'white', fontSize: 12, padding: '5px 10px', borderRadius: 6,
+          whiteSpace: 'nowrap', pointerEvents: 'none', boxShadow: '0 2px 8px rgba(0,0,0,0.3)' }}>
+          {uc.title}
+          <div style={{ color: '#9CA3AF', fontSize: 11 }}>Klaster {uc.klaster}</div>
+        </div>
+      )}
+    </span>
+  );
+}
+
+// ── Render teks dengan UC tooltip otomatis ────────────
+function TextWithUCTooltips({ text }) {
+  if (!text) return null;
+  const parts = text.split(/(UC_\d_\d+)/g);
+  return (
+    <span>
+      {parts.map((part, i) =>
+        /^UC_\d_\d+$/.test(part)
+          ? <UCTooltip key={i} ucId={part} />
+          : <span key={i}>{part}</span>
+      )}
+    </span>
+  );
+}
 
 const MATRIX = {
   hire:         { label: '✓ HIRE — Target Pipeline',      cls: 'matrix-hire' },
@@ -17,6 +59,9 @@ export default function CandidateProfile({ candidate, onBack }) {
   const [profile, setProfile]     = useState(null);
   const [loading, setLoading]     = useState(true);
   const [generating, setGen]      = useState(false);
+  const [overrideDecision, setOverride] = useState(null); // override penilai
+  const [savingDecision, setSaving]     = useState(false);
+  const [decisionSaved, setDecisionSaved] = useState(false);
 
   useEffect(() => {
     async function load() {
@@ -25,11 +70,28 @@ export default function CandidateProfile({ candidate, onBack }) {
         const [e, p] = await Promise.all([getEvaluations(candidate.id), getProfile(candidate.id)]);
         setEvals(e || []);
         setProfile(p || null);
+        // Load keputusan yang sudah ada
+        if (candidate.final_decision) setOverride(candidate.final_decision);
       } catch (err) { console.error(err); }
       finally { setLoading(false); }
     }
     load();
   }, [candidate.id]);
+
+  async function handleSaveDecision() {
+    if (!overrideDecision) return;
+    setSaving(true);
+    try {
+      const directionMap = {
+        hire: 'pm_fit', hire_with_dev: 'pm_fit',
+        caution: 'neutral', no: 'product_lean'
+      };
+      await updateFinalDecision(candidate.id, directionMap[overrideDecision] || 'neutral', overrideDecision);
+      setDecisionSaved(true);
+      setTimeout(() => setDecisionSaved(false), 3000);
+    } catch(e) { alert('Gagal simpan keputusan: ' + e.message); }
+    finally { setSaving(false); }
+  }
 
   async function handleGenerate() {
     setGen(true);
@@ -144,6 +206,43 @@ export default function CandidateProfile({ candidate, onBack }) {
                   )}
                 </div>
               )}
+
+              {/* Override keputusan penilai */}
+              <div className="card" style={{ marginBottom: 14, border: overrideDecision ? '2px solid #548235' : '1px solid #E5E7EB' }}>
+                <div className="card-title">Keputusan Panel</div>
+                <div style={{ fontSize: 13, color: '#6B7280', marginBottom: 12, lineHeight: 1.5 }}>
+                  Override rekomendasi AI berdasarkan pertimbangan panel. Keputusan ini akan tampil di Dashboard.
+                </div>
+                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 8, marginBottom: 12 }}>
+                  {[
+                    { key: 'hire', label: '✓ HIRE', bg: '#E2EFDA', color: '#27500A', border: '#548235' },
+                    { key: 'hire_with_dev', label: 'HIRE + Pengembangan', bg: '#EBF4FA', color: '#0C447C', border: '#2E75B6' },
+                    { key: 'caution', label: '⚠ Hati-hati', bg: '#FBF3D5', color: '#633806', border: '#BF8F00' },
+                    { key: 'no', label: '✗ NO', bg: '#FBE4E4', color: '#791F1F', border: '#C00000' },
+                  ].map(opt => (
+                    <button key={opt.key}
+                      onClick={() => setOverride(opt.key)}
+                      style={{
+                        padding: '10px 14px', borderRadius: 8, fontSize: 13, fontWeight: 600,
+                        cursor: 'pointer', transition: 'all .15s',
+                        background: overrideDecision === opt.key ? opt.bg : 'var(--color-background-secondary)',
+                        color: overrideDecision === opt.key ? opt.color : '#6B7280',
+                        border: overrideDecision === opt.key ? `2px solid ${opt.border}` : '1px solid #E5E7EB',
+                      }}>
+                      {opt.label}
+                    </button>
+                  ))}
+                </div>
+                <div style={{ display: 'flex', gap: 10, alignItems: 'center' }}>
+                  <button className="btn btn-primary" onClick={handleSaveDecision}
+                    disabled={!overrideDecision || savingDecision}>
+                    {savingDecision ? <><div className="spinner"/> Menyimpan...</> : 'Simpan Keputusan'}
+                  </button>
+                  {decisionSaved && (
+                    <span style={{ fontSize: 13, color: '#548235', fontWeight: 600 }}>✓ Tersimpan — Dashboard terupdate</span>
+                  )}
+                </div>
+              </div>
 
               <div className="card">
                 <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 14 }}>

@@ -258,3 +258,57 @@ export async function updateBatchStage3Companion(batchId, companionUcId) {
     .eq('id', batchId);
   if (error) throw error;
 }
+
+// ── CONSISTENCY RESULTS ───────────────────────────────
+export async function saveConsistencyResult(candidateId, result) {
+  const { data: existing } = await supabase
+    .from('candidate_profiles')
+    .select('id')
+    .eq('candidate_id', candidateId)
+    .single();
+
+  const payload = { consistency_result: result, updated_at: new Date().toISOString() };
+
+  if (existing) {
+    const { error } = await supabase
+      .from('candidate_profiles')
+      .update(payload)
+      .eq('candidate_id', candidateId);
+    if (error) throw error;
+  } else {
+    const { error } = await supabase
+      .from('candidate_profiles')
+      .insert({ candidate_id: candidateId, ...payload });
+    if (error) throw error;
+  }
+}
+
+export async function getConsistencyResult(candidateId) {
+  const { data, error } = await supabase
+    .from('candidate_profiles')
+    .select('consistency_result')
+    .eq('candidate_id', candidateId)
+    .single();
+  if (error && error.code !== 'PGRST116') throw error;
+  return data?.consistency_result || null;
+}
+
+// ── UPDATE FINAL DECISION (override penilai) ─────────
+export async function updateFinalDecision(candidateId, direction, finalDecision) {
+  const { error } = await supabase
+    .from('candidates')
+    .update({ direction, final_decision: finalDecision })
+    .eq('id', candidateId);
+  if (error) throw error;
+}
+
+// ── GET CANDIDATE (fresh dari DB) ────────────────────
+export async function getCandidateById(candidateId) {
+  const { data, error } = await supabase
+    .from('candidates')
+    .select('*')
+    .eq('id', candidateId)
+    .single();
+  if (error) throw error;
+  return data;
+}
