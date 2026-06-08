@@ -2,8 +2,20 @@ import React, { useState } from 'react';
 
 const VERSIONS = [
   {
-    version: 'v1.5.0',
+    version: 'v1.6.0',
     label: 'Terbaru',
+    status: 'deployed',
+    title: 'Naturalisasi Bank Soal + Tooltip UC + Metrik Dashboard',
+    date: '5 Jun 2025',
+    items: [
+      { type: 'change', text: 'Naturalisasi bahasa 40 UC di bank.js — 70 frasa di field cari, waspadai, dan rubrik diubah menjadi bahasa Indonesia yang lebih natural tanpa mengubah esensi penilaian.' },
+      { type: 'new', text: 'Tooltip UC di semua teks AI-generated — hover di mention UC_X_Y di reasoning, evidence, konsistensi, profil kandidat, dan catatan AI menampilkan judul UC dan klasternya.' },
+      { type: 'new', text: 'Metrik dashboard diperluas — hire_with_dev dan caution sekarang muncul sebagai baris metrik kedua di Dashboard kalau ada kandidat dengan keputusan tersebut.' },
+    ]
+  },
+  {
+    version: 'v1.5.0',
+    label: '',
     status: 'deployed',
     title: 'Download PDF Soal + Fix Bug Panel & Stage',
     date: '5 Jun 2025',
@@ -240,7 +252,7 @@ const PRINSIP = [
 ];
 
 export default function Changelog() {
-  const [expanded, setExpanded] = useState(new Set(['v1.5.0']));
+  const [expanded, setExpanded] = useState(new Set(['v1.6.0']));
 
   function toggle(v) {
     setExpanded(prev => {

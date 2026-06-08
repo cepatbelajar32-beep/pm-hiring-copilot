@@ -254,20 +254,32 @@ export default function Dashboard({ batches, candidates, loading, onRefresh, onS
   const [deleteTarget, setDeleteTarget] = useState(null);
   const [ucBatch, setUcBatch]           = useState(null); // batch yang mau dilihat UC-nya
 
-  const hires  = candidates.filter(c => c.final_decision === 'hire').length;
-  const active = candidates.filter(c => c.status === 'active').length;
+  const hires     = candidates.filter(c => c.final_decision === 'hire').length;
+  const hiresDev  = candidates.filter(c => c.final_decision === 'hire_with_dev').length;
+  const cautions  = candidates.filter(c => c.final_decision === 'caution').length;
+  const nos       = candidates.filter(c => c.final_decision === 'no').length;
+  const active    = candidates.filter(c => c.status === 'active').length;
 
   if (loading) return <Spinner text="Memuat dashboard..." />;
 
   return (
     <div>
-      {/* Metrics */}
+      {/* Metrics row 1 */}
       <div className="grid-4 mb-3">
         <MetricCard value={batches.length}    label="Total Batch" />
         <MetricCard value={candidates.length} label="Total Kandidat" />
         <MetricCard value={active}            label="Kandidat Aktif" color="#2E75B6" />
         <MetricCard value={hires}             label="Hire" color="#548235" />
       </div>
+      {/* Metrics row 2 — keputusan */}
+      {(hiresDev > 0 || cautions > 0 || nos > 0) && (
+        <div className="grid-4 mb-3">
+          <MetricCard value={hiresDev}  label="Hire + Pengembangan" color="#2E75B6" />
+          <MetricCard value={cautions}  label="Hati-hati" color="#BF8F00" />
+          <MetricCard value={nos}       label="No" color="#C00000" />
+          <MetricCard value={candidates.filter(c => !c.final_decision).length} label="Belum Diputuskan" color="#9CA3AF" />
+        </div>
+      )}
 
       <div className="grid-2">
         {/* Batches */}

@@ -62,6 +62,21 @@ function UCTooltip({ ucId }) {
   );
 }
 
+// ── TextWithUCTooltips ───────────────────────────────
+function TextWithUCTooltips({ text }) {
+  if (!text) return null;
+  const parts = (text + '').split(/(UC_\d_\d+)/g);
+  return (
+    <span>
+      {parts.map((part, i) =>
+        /^UC_\d_\d+$/.test(part)
+          ? <UCTooltip key={i} ucId={part} />
+          : <span key={i}>{part}</span>
+      )}
+    </span>
+  );
+}
+
 // ── UCCard ────────────────────────────────────────────
 function UCCard({ uc, stage, candidateId, existingAnswer, existingEval, onEvalSaved, onAIStart, onAIDone }) {
   const [answer, setAnswer]           = useState('');
@@ -192,14 +207,14 @@ function UCCard({ uc, stage, candidateId, existingAnswer, existingEval, onEvalSa
             <DirectionBadge direction={aiDraft.ai_direction || aiDraft.direction} />
             <FlagBadge flag={aiDraft.ai_flag || aiDraft.flag} />
           </div>
-          <div className="ai-reasoning"><strong>Reasoning:</strong> {aiDraft.ai_reasoning || aiDraft.reasoning}</div>
-          <div className="ai-evidence"><strong>Evidence:</strong> "{aiDraft.ai_evidence || aiDraft.evidence}"</div>
-          {aiDraft.flag_note && <div className="ai-flag-note"><strong>Catatan panel:</strong> {aiDraft.flag_note}</div>}
+          <div className="ai-reasoning"><strong>Reasoning:</strong> <TextWithUCTooltips text={aiDraft.ai_reasoning || aiDraft.reasoning} /></div>
+          <div className="ai-evidence"><strong>Evidence:</strong> "<TextWithUCTooltips text={aiDraft.ai_evidence || aiDraft.evidence} />"</div>
+          {aiDraft.flag_note && <div className="ai-flag-note"><strong>Catatan panel:</strong> <TextWithUCTooltips text={aiDraft.flag_note} /></div>}
 
           {(aiDraft.individuality_note) && (
             <div style={{ background:'#EBF4FA', border:'1px solid #2E75B6', borderLeft:'3px solid #2E75B6',
               borderRadius:8, padding:'10px 14px', marginTop:8, fontSize:13, color:'#1F3864' }}>
-              <strong>👥 Pola penggunaan "kami":</strong> {aiDraft.individuality_note}
+              <strong>👥 Pola penggunaan "kami":</strong> <TextWithUCTooltips text={aiDraft.individuality_note} />
             </div>
           )}
           {aiDraft.authenticity_flag && (
@@ -529,7 +544,7 @@ function AnalisisAkhir({ candidate, answers, evals, savedConsistency, onConsiste
                   <div style={{ fontWeight:800, fontSize:13, color:s.color, textTransform:'uppercase', letterSpacing:'0.05em', marginBottom:5 }}>
                     Konsistensi Keseluruhan: {result.overall_consistency}
                   </div>
-                  <div style={{ fontSize:14, color:'#374151', lineHeight:1.6 }}>{result.consistency_summary}</div>
+                  <div style={{ fontSize:14, color:'#374151', lineHeight:1.6 }}><TextWithUCTooltips text={result.consistency_summary} /></div>
                 </div>
               );
             })()}
@@ -538,7 +553,7 @@ function AnalisisAkhir({ candidate, answers, evals, savedConsistency, onConsiste
                 <div style={{ fontWeight:600, color:'#C00000', marginBottom:4 }}>
                   {(c.uc_ids||[]).map(id => <UCTooltip key={id} ucId={id} />)}
                 </div>
-                <div style={{ color:'#374151', lineHeight:1.6 }}>{c.description}</div>
+                <div style={{ color:'#374151', lineHeight:1.6 }}><TextWithUCTooltips text={c.description} /></div>
               </div>
             ))}
 
@@ -567,7 +582,7 @@ function AnalisisAkhir({ candidate, answers, evals, savedConsistency, onConsiste
                         )}
                       </div>
                       {s.claim && <div style={{ fontStyle:'italic', color:'#374151', marginBottom:4 }}>"{s.claim}"</div>}
-                      <div style={{ color:'#374151', lineHeight:1.6 }}>{s.reason}</div>
+                      <div style={{ color:'#374151', lineHeight:1.6 }}><TextWithUCTooltips text={s.reason} /></div>
                     </div>
                   );
                 })}
@@ -577,7 +592,7 @@ function AnalisisAkhir({ candidate, answers, evals, savedConsistency, onConsiste
               <div style={{ padding:'10px 14px', background:'#EBF4FA', border:'1px solid #2E75B6',
                 borderLeft:'3px solid #2E75B6', borderRadius:8, marginBottom:8, fontSize:13 }}>
                 <div style={{ fontWeight:700, color:'#0C447C', marginBottom:4 }}>👥 Pola "kami"</div>
-                <div style={{ color:'#374151', lineHeight:1.6 }}>{result.individuality_pattern}</div>
+                <div style={{ color:'#374151', lineHeight:1.6 }}><TextWithUCTooltips text={result.individuality_pattern} /></div>
               </div>
             )}
             {(result.probe_recommendations||[]).length > 0 && (
@@ -585,14 +600,14 @@ function AnalisisAkhir({ candidate, answers, evals, savedConsistency, onConsiste
                 <div style={{ fontWeight:700, fontSize:13, color:'#548235', marginBottom:8 }}>💡 Pertanyaan probe lanjutan</div>
                 {result.probe_recommendations.map((p,i) => (
                   <div key={i} style={{ padding:'8px 12px', background:'#E2EFDA', borderRadius:6, marginBottom:6, fontSize:13, color:'#1F3A0A', lineHeight:1.6 }}>
-                    {i+1}. {p}
+                    {i+1}. <TextWithUCTooltips text={p} />
                   </div>
                 ))}
               </div>
             )}
             {result.overall_note && (
               <div style={{ padding:'12px 16px', background:'#F9FAFB', border:'1px solid #E5E7EB', borderRadius:10, fontSize:14, color:'#374151', lineHeight:1.6, marginTop:8 }}>
-                <strong>Catatan untuk panel:</strong> {result.overall_note}
+                <strong>Catatan untuk panel:</strong> <TextWithUCTooltips text={result.overall_note} />
               </div>
             )}
           </div>
@@ -632,7 +647,7 @@ function AnalisisAkhir({ candidate, answers, evals, savedConsistency, onConsiste
               <span style={{ fontFamily:'DM Mono,monospace', fontSize:11, color:'#2E75B6', background:'#EBF4FA', padding:'1px 6px', borderRadius:4, fontWeight:700 }}>{e.uc_id}</span>
               <span style={{ fontWeight:600, color:'#0C447C' }}>👥 Pola penggunaan "kami"</span>
             </div>
-            <div style={{ color:'#374151', lineHeight:1.6 }}>{e.individuality_note}</div>
+            <div style={{ color:'#374151', lineHeight:1.6 }}><TextWithUCTooltips text={e.individuality_note} /></div>
           </div>
         ))}
       </SectionBody>

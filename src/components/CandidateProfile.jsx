@@ -193,7 +193,7 @@ export default function CandidateProfile({ candidate, onBack, onRefresh }) {
                 </div>
                 {profile.direction_evidence && (
                   <div style={{ fontSize: 14, color: '#4B5563', fontStyle: 'italic', borderLeft: '3px solid #2E75B6', paddingLeft: 12, lineHeight: 1.6 }}>
-                    {profile.direction_evidence}
+                    <TextWithUCTooltips text={profile.direction_evidence} />
                   </div>
                 )}
               </div>
@@ -203,7 +203,7 @@ export default function CandidateProfile({ candidate, onBack, onRefresh }) {
                   <div className="card-title">Rekomendasi AI</div>
                   <div className={`matrix-cell ${matrix.cls}`} style={{ marginBottom: 10 }}>{matrix.label}</div>
                   {profile.ai_recommendation_note && (
-                    <div style={{ fontSize: 14, color: '#4B5563', lineHeight: 1.6 }}>{profile.ai_recommendation_note}</div>
+                    <div style={{ fontSize: 14, color: '#4B5563', lineHeight: 1.6 }}><TextWithUCTooltips text={profile.ai_recommendation_note} /></div>
                   )}
                 </div>
               )}
@@ -264,7 +264,7 @@ export default function CandidateProfile({ candidate, onBack, onRefresh }) {
                     <div style={{ fontSize: 13, fontWeight: 700, color: '#548235', marginBottom: 8 }}>Kekuatan</div>
                     {(profile.strengths || []).map((s, i) => (
                       <div key={i} style={{ fontSize: 14, display: 'flex', gap: 7, marginBottom: 6, lineHeight: 1.5 }}>
-                        <span style={{ color: '#548235', flexShrink: 0, fontWeight: 700 }}>✓</span><span>{s}</span>
+                        <span style={{ color: '#548235', flexShrink: 0, fontWeight: 700 }}>✓</span><TextWithUCTooltips text={s} />
                       </div>
                     ))}
                   </div>
@@ -272,7 +272,7 @@ export default function CandidateProfile({ candidate, onBack, onRefresh }) {
                     <div style={{ fontSize: 13, fontWeight: 700, color: '#C00000', marginBottom: 8 }}>Gap / Perlu Perhatian</div>
                     {(profile.gaps || []).map((g, i) => (
                       <div key={i} style={{ fontSize: 14, display: 'flex', gap: 7, marginBottom: 6, lineHeight: 1.5 }}>
-                        <span style={{ color: '#BF8F00', flexShrink: 0, fontWeight: 700 }}>△</span><span>{g}</span>
+                        <span style={{ color: '#BF8F00', flexShrink: 0, fontWeight: 700 }}>△</span><TextWithUCTooltips text={g} />
                       </div>
                     ))}
                   </div>
