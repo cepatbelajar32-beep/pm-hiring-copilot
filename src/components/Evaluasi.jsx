@@ -693,7 +693,7 @@ export default function Evaluasi({ candidate, candidates, batch, onSelectCandida
 
   useEffect(() => { loadData(); }, [loadData]);
 
-  // Auto-update current_stage — baca current_stage dari DB untuk hindari stale prop
+  // Auto-update current_stage — baca semua data fresh dari DB
   async function handleEvalSaved(stageNum) {
     const { getEvaluations: fetchEvals, getAnswers: fetchAnswers } = await import('../lib/supabase');
     const [freshEvals, freshAnswers, freshCandidate] = await Promise.all([
@@ -702,15 +702,37 @@ export default function Evaluasi({ candidate, candidates, batch, onSelectCandida
       getCandidateById(candidate.id),
     ]);
 
-    const activeUCs = getStageUCs(stageNum);
+    // Hitung UC aktif di stage ini dari batch/rotation — bukan dari state
+    let activeUCsForStage = [];
+    if (batch) {
+      const batchUCs = getActiveUCsFromBatch(batch);
+      activeUCsForStage = batchUCs?.[`stage${stageNum}`] || getActiveUCs(stageNum);
+    } else {
+      activeUCsForStage = getActiveUCs(stageNum);
+    }
+    // Stage 4 — pakai stage4UCs dari kandidat atau fallback
+    if (stageNum === 4) {
+      const s4 = freshCandidate?.stage4_ucs;
+      if (s4 && s4.length > 0) {
+        activeUCsForStage = s4.map(id => BANK.stage4.find(uc => uc.id === id)).filter(Boolean);
+      } else if (batch?.stage4_ucs) {
+        activeUCsForStage = batch.stage4_ucs.map(id => BANK.stage4.find(uc => uc.id === id)).filter(Boolean);
+      } else {
+        activeUCsForStage = getActiveUCs(4);
+      }
+    }
+
     const confirmedInStage = (freshEvals || []).filter(e => e.stage === stageNum && e.is_confirmed);
     const currentStageFromDB = freshCandidate?.current_stage || 1;
 
-    if (activeUCs.length > 0 && confirmedInStage.length >= activeUCs.length) {
+    console.log(`Stage ${stageNum}: ${confirmedInStage.length}/${activeUCsForStage.length} dikonfirmasi, current_stage DB: ${currentStageFromDB}`);
+
+    if (activeUCsForStage.length > 0 && confirmedInStage.length >= activeUCsForStage.length) {
       const nextStage = stageNum + 1;
       if (nextStage <= 4 && currentStageFromDB <= stageNum) {
         try {
           await updateCandidateStage(candidate.id, nextStage);
+          console.log(`current_stage updated ke ${nextStage}`);
           onRefresh && onRefresh();
         } catch(e) { console.error('Gagal update stage:', e); }
       }

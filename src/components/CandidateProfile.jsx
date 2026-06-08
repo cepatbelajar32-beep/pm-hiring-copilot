@@ -54,7 +54,7 @@ const MATRIX = {
   no:           { label: 'NO — Tidak Direkomendasikan',    cls: 'matrix-no' },
 };
 
-export default function CandidateProfile({ candidate, onBack }) {
+export default function CandidateProfile({ candidate, onBack, onRefresh }) {
   const [evals, setEvals]         = useState([]);
   const [profile, setProfile]     = useState(null);
   const [loading, setLoading]     = useState(true);
@@ -88,6 +88,7 @@ export default function CandidateProfile({ candidate, onBack }) {
       };
       await updateFinalDecision(candidate.id, directionMap[overrideDecision] || 'neutral', overrideDecision);
       setDecisionSaved(true);
+      onRefresh && onRefresh(); // Update Dashboard
       setTimeout(() => setDecisionSaved(false), 3000);
     } catch(e) { alert('Gagal simpan keputusan: ' + e.message); }
     finally { setSaving(false); }
@@ -219,26 +220,39 @@ export default function CandidateProfile({ candidate, onBack }) {
                     { key: 'hire_with_dev', label: 'HIRE + Pengembangan', bg: '#EBF4FA', color: '#0C447C', border: '#2E75B6' },
                     { key: 'caution', label: '⚠ Hati-hati', bg: '#FBF3D5', color: '#633806', border: '#BF8F00' },
                     { key: 'no', label: '✗ NO', bg: '#FBE4E4', color: '#791F1F', border: '#C00000' },
-                  ].map(opt => (
-                    <button key={opt.key}
-                      onClick={() => setOverride(opt.key)}
-                      style={{
-                        padding: '10px 14px', borderRadius: 8, fontSize: 13, fontWeight: 600,
-                        cursor: 'pointer', transition: 'all .15s',
-                        background: overrideDecision === opt.key ? opt.bg : 'var(--color-background-secondary)',
-                        color: overrideDecision === opt.key ? opt.color : '#6B7280',
-                        border: overrideDecision === opt.key ? `2px solid ${opt.border}` : '1px solid #E5E7EB',
-                      }}>
-                      {opt.label}
-                    </button>
-                  ))}
+                  ].map(opt => {
+                    const isLocked = !!(candidate.final_decision || decisionSaved);
+                    const isSelected = overrideDecision === opt.key;
+                    return (
+                      <button key={opt.key}
+                        onClick={() => !isLocked && setOverride(opt.key)}
+                        disabled={isLocked}
+                        style={{
+                          padding: '10px 14px', borderRadius: 8, fontSize: 13, fontWeight: 600,
+                          cursor: isLocked ? 'default' : 'pointer', transition: 'all .15s',
+                          background: isSelected ? opt.bg : 'var(--color-background-secondary)',
+                          color: isSelected ? opt.color : '#9CA3AF',
+                          border: isSelected ? `2px solid ${opt.border}` : '1px solid #E5E7EB',
+                          opacity: isLocked && !isSelected ? 0.4 : 1,
+                        }}>
+                        {opt.label}
+                      </button>
+                    );
+                  })}
                 </div>
                 <div style={{ display: 'flex', gap: 10, alignItems: 'center' }}>
-                  <button className="btn btn-primary" onClick={handleSaveDecision}
-                    disabled={!overrideDecision || savingDecision}>
-                    {savingDecision ? <><div className="spinner"/> Menyimpan...</> : 'Simpan Keputusan'}
-                  </button>
-                  {decisionSaved && (
+                  {!decisionSaved && !candidate.final_decision ? (
+                    <button className="btn btn-primary" onClick={handleSaveDecision}
+                      disabled={!overrideDecision || savingDecision}>
+                      {savingDecision ? <><div className="spinner"/> Menyimpan...</> : 'Simpan Keputusan'}
+                    </button>
+                  ) : (
+                    <span style={{ fontSize: 13, color: '#548235', fontWeight: 600,
+                      background: '#E2EFDA', padding: '6px 14px', borderRadius: 8, border: '1px solid #548235' }}>
+                      ✓ Keputusan sudah dikunci
+                    </span>
+                  )}
+                  {decisionSaved && !candidate.final_decision && (
                     <span style={{ fontSize: 13, color: '#548235', fontWeight: 600 }}>✓ Tersimpan — Dashboard terupdate</span>
                   )}
                 </div>

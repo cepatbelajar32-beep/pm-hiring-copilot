@@ -2,8 +2,21 @@ import React, { useState } from 'react';
 
 const VERSIONS = [
   {
-    version: 'v1.4.0',
+    version: 'v1.5.0',
     label: 'Terbaru',
+    status: 'deployed',
+    title: 'Download PDF Soal + Fix Bug Panel & Stage',
+    date: '5 Jun 2025',
+    items: [
+      { type: 'new', text: 'Fitur Download Soal — menu baru di sidebar. Pilih batch, preview UC yang aktif, lalu download PDF soal Stage 1+2+3 untuk dikirim ke kandidat. PDF di-generate langsung di browser via print dialog.' },
+      { type: 'fix', text: 'Keputusan panel dikunci setelah disimpan — tombol pilihan dan simpan di-disable, tidak bisa diubah lagi.' },
+      { type: 'fix', text: 'Keputusan hire_with_dev dan caution sekarang tampil di Dashboard setelah disimpan dari Profil Kandidat — onRefresh dipanggil setelah save.' },
+      { type: 'fix', text: 'Bug current_stage — handleEvalSaved sekarang baca UC aktif dari batch langsung (bukan dari state) dan current_stage dari DB, sehingga stage update lebih akurat.' },
+    ]
+  },
+  {
+    version: 'v1.4.0',
+    label: '',
     status: 'deployed',
     title: 'Halaman Referensi + Fix Bug',
     date: '5 Jun 2025',
@@ -227,7 +240,7 @@ const PRINSIP = [
 ];
 
 export default function Changelog() {
-  const [expanded, setExpanded] = useState(new Set(['v1.4.0']));
+  const [expanded, setExpanded] = useState(new Set(['v1.5.0']));
 
   function toggle(v) {
     setExpanded(prev => {
