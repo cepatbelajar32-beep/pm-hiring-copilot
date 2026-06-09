@@ -161,39 +161,74 @@ Catatan:
 
 // ── GENERATE INTERVIEW SCRIPT ─────────────────────────────────────────────────
 export async function generateInterviewScript(candidate, evaluations, stage4Bank) {
-  const evalSummary = evaluations.map(e =>
-    `${e.uc_id}: Skor ${e.final_score || e.ai_score}, Arah ${e.ai_direction || '-'}, Flag: ${e.ai_flag || 'tidak ada'}. ${e.ai_reasoning || ''}`
-  ).join('\n');
+  // Kelompokkan evaluasi per stage dan ekstrak UC yang sudah dikerjakan
+  const ucsByStage = { 1:[], 2:[], 3:[], 4:[] };
+  evaluations.forEach(e => {
+    const stage = e.stage || 1;
+    if (ucsByStage[stage]) ucsByStage[stage].push(e.uc_id);
+  });
 
-  const ucList = stage4Bank.map(u => `${u.id}: ${u.title} (Kompetensi ${u.klaster})`).join('\n');
+  // Ringkasan evaluasi per UC — sertakan konteks jawaban konkret
+  const evalSummary = evaluations.map(e =>
+    `[Stage ${e.stage}] ${e.uc_id}: Skor ${e.final_score || e.ai_score}/5, Arah ${e.ai_direction || '-'}` +
+    (e.ai_flag ? `, Flag: ${e.ai_flag}` : '') +
+    (e.ai_reasoning ? `\nReasoning: ${e.ai_reasoning}` : '') +
+    (e.authenticity_flag ? `\nKeaslian: ${e.authenticity_flag} — ${e.authenticity_note || ''}` : '') +
+    (e.individuality_note ? `\nPola kami: ${e.individuality_note}` : '')
+  ).join('\n\n');
+
+  const ucList = stage4Bank.map(u => `${u.id}: ${u.title} (Klaster ${u.klaster})`).join('\n');
+
+  // Daftar UC yang sudah dikerjakan di Stage 1-3 — penting untuk relevansi probe
+  const workedUCs = [
+    ucsByStage[1].length > 0 ? `Stage 1 (${ucsByStage[1].length} UC): ${ucsByStage[1].join(', ')}` : null,
+    ucsByStage[2].length > 0 ? `Stage 2 (${ucsByStage[2].length} UC): ${ucsByStage[2].join(', ')}` : null,
+    ucsByStage[3].length > 0 ? `Stage 3 (${ucsByStage[3].length} UC): ${ucsByStage[3].join(', ')}` : null,
+  ].filter(Boolean).join('\n');
 
   const systemPrompt = `Kamu adalah asisten panel interview rekrutmen Junior IT PM.
-Berdasarkan hasil evaluasi kandidat, rekomendasikan 7 pertanyaan Stage 4 yang paling relevan dan sesuaikan probe-nya dengan profil kandidat ini.
+Tugasmu: pilih 7 UC Stage 4 yang paling relevan untuk kandidat ini dan buat probe yang dipersonalisasi.
 
-Konteks: rekrutmen untuk IT internal perusahaan. AI adalah PEMBANTU — rekomendasi ini untuk dipertimbangkan panel, bukan keputusan final.
+Konteks rekrutmen: IT internal perusahaan non-tech. AI adalah PEMBANTU — rekomendasi untuk dipertimbangkan panel.
 
-Berikan output HANYA dalam format JSON valid:
+PENTING — UC Stage 4 yang dipilih harus relevan dengan apa yang sudah dikerjakan kandidat:
+- UC_4_2 (Pendalaman Sumber Kepuasan) hanya pilih kalau kandidat sudah mengerjakan UC_1_1 di Stage 1
+- UC_4_3 (Klarifikasi Artefak Stage 3) hanya pilih kalau kandidat sudah mengerjakan UC Stage 3
+- Probe harus merujuk ke jawaban konkret yang sudah diberikan di Stage sebelumnya — bukan topik baru yang tidak ada konteksnya
+- Jangan pilih UC Stage 4 yang topiknya tidak pernah disinggung di Stage 1-3 kandidat ini
+
+Panduan pemilihan:
+- Pilih tepat 7 UC dari daftar yang tersedia
+- UC_4_1 dan UC_4_7 hampir selalu relevan
+- Prioritaskan UC yang mendalami area dengan skor 3 (perlu dikonfirmasi) atau ada flag/concern
+- Kalau ada authenticity_flag atau individuality_note, pilih UC yang bisa menggali lebih dalam
+- Jika ada indikasi Product-lean, prioritaskan UC_4_1 dan UC_4_5 untuk verifikasi
+- custom_probe harus spesifik ke kandidat ini — kutip atau parafrase jawaban konkret dari Stage 1-3
+
+Output HANYA JSON valid:
 {
-  "selected_ucs": ["UC_4_1", "UC_4_2"],
-  "rationale": "penjelasan singkat kenapa pertanyaan-pertanyaan ini dipilih untuk kandidat ini (2-3 kalimat)",
+  "selected_ucs": ["UC_4_1", ...7 total],
+  "rationale": "2-3 kalimat kenapa set ini dipilih untuk kandidat ini",
   "questions": [
     {
       "uc_id": "UC_4_1",
-      "custom_probe": "pertanyaan atau konteks yang disesuaikan dengan pola jawaban kandidat ini"
+      "custom_probe": "probe yang merujuk ke jawaban konkret kandidat di Stage sebelumnya"
     }
   ]
-}
-
-Panduan memilih:
-- Pilih tepat 7 UC dari daftar yang tersedia
-- UC_4_1 (Momen Pengalihan) dan UC_4_7 (Keterbukaan terhadap Masukan) hampir selalu perlu ada
-- Sesuaikan probe dengan jawaban konkret yang sudah diberikan di Stage sebelumnya
-- Jika ada indikasi arah Product Manager, prioritaskan UC_4_1 dan UC_4_5
-- Jika ada kekhawatiran soal rasa tanggung jawab atau keterbukaan menerima masukan, prioritaskan UC_4_7 dan UC_4_2`;
+}`;
 
   return await callClaude(
     systemPrompt,
-    `Kandidat: ${candidate.name}\n\nHasil evaluasi:\n${evalSummary}\n\nPertanyaan Stage 4 yang tersedia:\n${ucList}`,
+    `Kandidat: ${candidate.name}
+
+UC yang sudah dikerjakan di Stage 1-3:
+${workedUCs || '(belum ada data stage)'}
+
+Hasil evaluasi lengkap:
+${evalSummary}
+
+UC Stage 4 yang tersedia untuk dipilih:
+${ucList}`,
     2000
   );
 }

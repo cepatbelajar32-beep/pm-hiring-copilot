@@ -106,14 +106,30 @@ export default function CandidateProfile({ candidate, onBack, onRefresh }) {
 
   if (loading) return <Spinner />;
 
-  // Bug fix: pastikan nilai klaster selalu number, fallback 0
   const safeNum = v => parseFloat(v) || 0;
 
+  // Hitung klaster langsung dari evals (sumber kebenaran tunggal — sama dengan Analisis Akhir)
+  const klasterScores = { A:[], B:[], C:[], D:[] };
+  evals.forEach(e => {
+    const allUCs = [...BANK.stage1, ...BANK.stage2, ...BANK.stage3, ...BANK.stage4];
+    const uc = allUCs.find(u => u.id === e.uc_id);
+    const score = e.final_score || e.ai_score;
+    if (uc && score) {
+      const klasters = (uc.klaster || '').split('/');
+      klasters.forEach(k => { if (klasterScores[k.trim()]) klasterScores[k.trim()].push(Number(score)); });
+    }
+  });
+  const avgKlaster = arr => arr.length ? (arr.reduce((a,b) => a+b,0) / arr.length) : 0;
+  const klasterA = avgKlaster(klasterScores.A);
+  const klasterB = avgKlaster(klasterScores.B);
+  const klasterC = avgKlaster(klasterScores.C);
+  const klasterD = avgKlaster(klasterScores.D);
+
   const radarData = [
-    { subject: 'Cognitive (A)',      value: safeNum(profile?.klaster_a), fullMark: 5 },
-    { subject: 'Orchestration (B)', value: safeNum(profile?.klaster_b), fullMark: 5 },
-    { subject: 'Character (C)',      value: safeNum(profile?.klaster_c), fullMark: 5 },
-    { subject: 'Foundational (D)',   value: safeNum(profile?.klaster_d), fullMark: 5 },
+    { subject: 'Cognitive (A)',      value: safeNum(klasterA.toFixed(1)), fullMark: 5 },
+    { subject: 'Orchestration (B)', value: safeNum(klasterB.toFixed(1)), fullMark: 5 },
+    { subject: 'Character (C)',      value: safeNum(klasterC.toFixed(1)), fullMark: 5 },
+    { subject: 'Foundational (D)',   value: safeNum(klasterD.toFixed(1)), fullMark: 5 },
   ];
 
   const matrix = MATRIX[profile?.matrix_position];
@@ -168,10 +184,10 @@ export default function CandidateProfile({ candidate, onBack, onRefresh }) {
               </div>
               <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10, marginTop: 12 }}>
                 {[
-                  { label: 'Cognitive (A)',      val: profile.klaster_a, color: '#2E75B6', desc: 'Pembeda utama' },
-                  { label: 'Orchestration (B)', val: profile.klaster_b, color: '#548235', desc: 'Pembeda utama' },
-                  { label: 'Character (C)',      val: profile.klaster_c, color: '#BF8F00', desc: 'Groomable' },
-                  { label: 'Foundational (D)',   val: profile.klaster_d, color: '#C00000', desc: 'Gerbang wajib' },
+                  { label: 'Cognitive (A)',      val: klasterA.toFixed(1), color: '#2E75B6', desc: 'Pembeda utama' },
+                  { label: 'Orchestration (B)', val: klasterB.toFixed(1), color: '#548235', desc: 'Pembeda utama' },
+                  { label: 'Character (C)',      val: klasterC.toFixed(1), color: '#BF8F00', desc: 'Groomable' },
+                  { label: 'Foundational (D)',   val: klasterD.toFixed(1), color: '#C00000', desc: 'Gerbang wajib' },
                 ].map(k => (
                   <div key={k.label} style={{ background: '#F9FAFB', borderRadius: 10, padding: '10px 12px' }}>
                     <div style={{ fontSize: 12, color: '#6B7280', marginBottom: 3, fontWeight: 500 }}>{k.label}</div>
