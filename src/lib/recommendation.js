@@ -32,13 +32,16 @@ export function calcRecommendation(evals, bank, consistencyResult, direction) {
 
   // Hitung flag keaslian
   const authFlags = evals.filter(e => e.authenticity_flag);
+  // Strong: klaim membesar atau detail tidak konsisten — lebih berbahaya karena intentional
   const strongFlags = authFlags.filter(e =>
     e.authenticity_flag === 'possible_exaggeration' ||
     e.authenticity_flag === 'inconsistent_detail'
   );
+  // Mild: kemungkinan ditulis AI — bisa tidak sengaja, tapi tetap perlu diperhatikan
   const mildFlags = authFlags.filter(e =>
     e.authenticity_flag === 'possible_ai_generated'
   );
+  const totalFlags = authFlags.length;
 
   // Konsistensi dari Review Konsistensi AI
   const consistency = consistencyResult?.overall_consistency || null;
@@ -74,6 +77,12 @@ export function calcRecommendation(evals, bank, consistencyResult, direction) {
   if (strongFlags.length >= 3) {
     reasons.no.push(`${strongFlags.length} flag keaslian kuat — jawaban diragukan keasliannya`);
   }
+  if (totalFlags >= 4 && strongFlags.length >= 2) {
+    // Banyak flag DAN ada strong flag = NO
+    reasons.no.push(`${totalFlags} flag keaslian dengan ${strongFlags.length} flag kuat — pola keaslian serius`);
+  }
+  // possible_ai_generated banyak = caution, bukan NO — karena ini deteksi probabilistik
+  // NO hanya untuk strong flags (exaggeration/inconsistent) yang lebih intentional
   if (isProductLeanStrong && klaster.A >= 3.5) {
     reasons.no.push('Arah Product Manager konsisten dan kuat di semua stage — salah pintu');
   }
@@ -93,6 +102,16 @@ export function calcRecommendation(evals, bank, consistencyResult, direction) {
   }
   if (mildFlags.length >= 2 && strongFlags.length >= 1) {
     reasons.caution.push(`${mildFlags.length} flag ringan + ${strongFlags.length} flag kuat — pola keaslian mencurigakan`);
+  }
+  if (totalFlags >= 2 && totalFlags < 4) {
+    reasons.caution.push(`${totalFlags} flag keaslian terdeteksi — perlu verifikasi di panel`);
+  }
+  if (mildFlags.length >= 3) {
+    reasons.caution.push(`${mildFlags.length} jawaban terindikasi ditulis AI — verifikasi gaya penulisan di panel`);
+  }
+  if (totalFlags >= 4 && strongFlags.length < 2) {
+    // Banyak flag tapi kebanyakan mild = hati-hati, bukan NO
+    reasons.caution.push(`${totalFlags} flag keaslian total (mayoritas AI-generated) — perlu probing mendalam di panel`);
   }
   if (isProductLean && !isProductLeanStrong) {
     reasons.caution.push('Indikasi arah Product Manager — perlu probing lebih dalam di panel');
@@ -128,8 +147,10 @@ export function calcRecommendation(evals, bank, consistencyResult, direction) {
   if (consistency === 'tinggi') {
     reasons.hire.push('Konsistensi tinggi — jawaban dapat dipercaya');
   }
-  if (!isProductLean && strongFlags.length === 0) {
-    reasons.hire.push('Arah PM-fit tanpa flag keaslian signifikan');
+  if (!isProductLean && totalFlags === 0) {
+    reasons.hire.push('Arah PM-fit tanpa flag keaslian');
+  } else if (!isProductLean && mildFlags.length <= 1 && strongFlags.length === 0) {
+    reasons.hire.push('Arah PM-fit dengan flag minimal');
   }
 
   // ── Tentukan rekomendasi akhir ────────────────────
@@ -143,10 +164,12 @@ export function calcRecommendation(evals, bank, consistencyResult, direction) {
     recommendation = 'caution';
   } else if (klaster.A >= 4.0 && klaster.B >= 4.0 && klaster.C >= 3.5 &&
              gateFailures.length === 0 && strongFlags.length === 0 &&
+             totalFlags <= 1 &&
              (consistency === 'tinggi' || consistency === null)) {
     recommendation = 'hire';
   } else if (klaster.A >= 3.0 && klaster.B >= 3.0 && klaster.C >= 3.0 &&
-             gateFailures.length === 0) {
+             gateFailures.length === 0 && strongFlags.length < 2) {
+    // Banyak mild flags saja tidak cukup untuk block hire_with_dev — tapi caution reasons tetap muncul
     recommendation = 'hire_with_dev';
   } else if (klaster.A < 3.0 || klaster.B < 3.0) {
     recommendation = 'no';
@@ -161,7 +184,7 @@ export function calcRecommendation(evals, bank, consistencyResult, direction) {
     reasons,
     klaster,
     gateFailures: gateFailures.map(e => e.uc_id),
-    authFlags: { strong: strongFlags.length, mild: mildFlags.length },
+    authFlags: { strong: strongFlags.length, mild: mildFlags.length, total: totalFlags },
     consistency,
     contradictions,
     exaggerations,
