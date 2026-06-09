@@ -717,37 +717,59 @@ export default function Evaluasi({ candidate, candidates, batch, onSelectCandida
       getCandidateById(candidate.id),
     ]);
 
-    // Hitung UC aktif di stage ini dari batch/rotation — bukan dari state
+    // Hitung UC aktif di stage ini
+    // Strategi: ambil dari batch kalau ada, fallback ke getActiveUCs
     let activeUCsForStage = [];
-    if (batch) {
-      const batchUCs = getActiveUCsFromBatch(batch);
-      activeUCsForStage = batchUCs?.[`stage${stageNum}`] || getActiveUCs(stageNum);
-    } else {
+    try {
+      if (stageNum === 4) {
+        const s4 = freshCandidate?.stage4_ucs;
+        if (s4 && s4.length > 0) {
+          activeUCsForStage = s4.map(id => BANK.stage4.find(uc => uc.id === id)).filter(Boolean);
+        } else if (batch?.stage4_ucs?.length > 0) {
+          activeUCsForStage = batch.stage4_ucs.map(id => BANK.stage4.find(uc => uc.id === id)).filter(Boolean);
+        } else {
+          activeUCsForStage = getActiveUCs(4);
+        }
+      } else if (batch) {
+        const batchUCs = getActiveUCsFromBatch(batch);
+        const key = `stage${stageNum}`;
+        if (batchUCs?.[key]?.length > 0) {
+          activeUCsForStage = batchUCs[key];
+        } else {
+          activeUCsForStage = getActiveUCs(stageNum);
+        }
+      } else {
+        activeUCsForStage = getActiveUCs(stageNum);
+      }
+    } catch(err) {
       activeUCsForStage = getActiveUCs(stageNum);
     }
-    // Stage 4 — pakai stage4UCs dari kandidat atau fallback
-    if (stageNum === 4) {
-      const s4 = freshCandidate?.stage4_ucs;
-      if (s4 && s4.length > 0) {
-        activeUCsForStage = s4.map(id => BANK.stage4.find(uc => uc.id === id)).filter(Boolean);
-      } else if (batch?.stage4_ucs) {
-        activeUCsForStage = batch.stage4_ucs.map(id => BANK.stage4.find(uc => uc.id === id)).filter(Boolean);
-      } else {
-        activeUCsForStage = getActiveUCs(4);
-      }
-    }
 
-    const confirmedInStage = (freshEvals || []).filter(e => e.stage === stageNum && e.is_confirmed);
+    // Hitung yang sudah dikonfirmasi di stage ini
+    const evalsInStage = (freshEvals || []).filter(e => e.stage === stageNum);
+    const confirmedInStage = evalsInStage.filter(e => e.is_confirmed);
     const currentStageFromDB = freshCandidate?.current_stage || 1;
 
-    console.log(`Stage ${stageNum}: ${confirmedInStage.length}/${activeUCsForStage.length} dikonfirmasi, current_stage DB: ${currentStageFromDB}`);
+    console.log(
+      'Stage update check:',
+      '\nstageNum:', stageNum,
+      '\nactiveUCs:', activeUCsForStage.map(u => u.id),
+      '\nevalsInStage:', evalsInStage.map(e => e.uc_id),
+      '\nconfirmed:', confirmedInStage.map(e => e.uc_id),
+      '\ncurrentStageDB:', currentStageFromDB
+    );
 
-    if (activeUCsForStage.length > 0 && confirmedInStage.length >= activeUCsForStage.length) {
+    // Update stage kalau semua UC aktif sudah dikonfirmasi
+    if (
+      activeUCsForStage.length > 0 &&
+      confirmedInStage.length >= activeUCsForStage.length &&
+      currentStageFromDB <= stageNum
+    ) {
       const nextStage = stageNum + 1;
-      if (nextStage <= 4 && currentStageFromDB <= stageNum) {
+      if (nextStage <= 4) {
         try {
           await updateCandidateStage(candidate.id, nextStage);
-          console.log(`current_stage updated ke ${nextStage}`);
+          console.log('current_stage updated ke', nextStage);
           onRefresh && onRefresh();
         } catch(e) { console.error('Gagal update stage:', e); }
       }
