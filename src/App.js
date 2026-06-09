@@ -113,6 +113,10 @@ export default function App() {
       const [b, c] = await Promise.all([getBatches(), getCandidates()]);
       setBatches(b || []);
       setCandidates(c || []);
+      // Update selectedCandidate dengan data terbaru kalau masih ada
+      setSelectedCandidate(prev =>
+        prev ? (c || []).find(x => x.id === prev.id) || prev : null
+      );
     } catch (e) {
       setError('Koneksi Supabase gagal. Pastikan schema SQL sudah dijalankan.');
     } finally {
@@ -160,7 +164,7 @@ export default function App() {
         />;
       case 'profile':
         if (selectedCandidate) {
-          return <CandidateProfile candidate={selectedCandidate} onBack={() => setSelectedCandidate(null)} />;
+          return <CandidateProfile candidate={selectedCandidate} onBack={() => setSelectedCandidate(null)} onRefresh={loadData} />;
         }
         return (
           <div>
