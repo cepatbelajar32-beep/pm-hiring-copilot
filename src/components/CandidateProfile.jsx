@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { RadarChart, PolarGrid, PolarAngleAxis, Radar, ResponsiveContainer, Tooltip } from 'recharts';
-import { getEvaluations, getProfile, saveProfile, updateFinalDecision } from '../lib/supabase';
+import { getEvaluations, getProfile, saveProfile, updateFinalDecision, getConsistencyResult } from '../lib/supabase';
 import { calcRecommendation, RECOMMENDATION_CONFIG } from '../lib/recommendation';
 import { generateCandidateProfile } from '../lib/claude';
 import { DirectionBadge, ScoreBadge, Avatar, Spinner, Alert } from './Shared';
@@ -60,6 +60,7 @@ export default function CandidateProfile({ candidate, onBack, onRefresh }) {
   const [profile, setProfile]     = useState(null);
   const [loading, setLoading]     = useState(true);
   const [generating, setGen]      = useState(false);
+  const [consistencyResult, setConsistencyResult] = useState(null);
   const [overrideDecision, setOverride] = useState(null); // override penilai
   const [savingDecision, setSaving]     = useState(false);
   const [decisionSaved, setDecisionSaved] = useState(false);
@@ -68,10 +69,14 @@ export default function CandidateProfile({ candidate, onBack, onRefresh }) {
     async function load() {
       setLoading(true);
       try {
-        const [e, p] = await Promise.all([getEvaluations(candidate.id), getProfile(candidate.id)]);
+        const [e, p, cr] = await Promise.all([
+          getEvaluations(candidate.id),
+          getProfile(candidate.id),
+          getConsistencyResult(candidate.id),
+        ]);
         setEvals(e || []);
         setProfile(p || null);
-        // Load keputusan yang sudah ada
+        setConsistencyResult(cr || null);
         if (candidate.final_decision) setOverride(candidate.final_decision);
       } catch (err) { console.error(err); }
       finally { setLoading(false); }
@@ -134,7 +139,7 @@ export default function CandidateProfile({ candidate, onBack, onRefresh }) {
   ];
 
   // Rekomendasi dari logika terpusat — bukan dari AI
-  const autoRec = calcRecommendation(evals, BANK, null, candidate?.direction);
+  const autoRec = calcRecommendation(evals, BANK, consistencyResult, candidate?.direction);
   const matrix = RECOMMENDATION_CONFIG[autoRec.recommendation];
 
   return (

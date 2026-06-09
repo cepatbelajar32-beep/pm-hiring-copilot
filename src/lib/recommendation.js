@@ -97,6 +97,17 @@ export function calcRecommendation(evals, bank, consistencyResult, direction) {
   if (consistency === 'rendah' && contradictions >= 2) {
     reasons.caution.push(`Konsistensi rendah dengan ${contradictions} kontradiksi — interpretasi skor perlu diverifikasi`);
   }
+  if (consistency === 'rendah' && contradictions < 2) {
+    reasons.caution.push('Konsistensi rendah terdeteksi — perlu verifikasi di panel');
+  }
+  if (consistency === 'sedang' && contradictions >= 1) {
+    reasons.caution.push(`Konsistensi sedang dengan ${contradictions} kontradiksi — klaim beberapa UC perlu didalami`);
+  }
+  // Pola individuality (pakai "kami" konsisten tanpa bisa jelaskan kontribusi) = caution
+  const indivPattern = consistencyResult?.individuality_pattern;
+  if (indivPattern && indivPattern !== null) {
+    reasons.caution.push('Pola kontribusi individual tidak jelas — kandidat kesulitan menjelaskan peran spesifiknya sendiri');
+  }
   if (strongFlags.length === 1) {
     reasons.caution.push('1 flag keaslian kuat — perlu verifikasi di panel');
   }
@@ -165,7 +176,9 @@ export function calcRecommendation(evals, bank, consistencyResult, direction) {
   } else if (klaster.A >= 4.0 && klaster.B >= 4.0 && klaster.C >= 3.5 &&
              gateFailures.length === 0 && strongFlags.length === 0 &&
              totalFlags <= 1 &&
-             (consistency === 'tinggi' || consistency === null)) {
+             consistency !== 'rendah' &&
+             (consistency === 'tinggi' || consistency === null || consistency === 'sedang')) {
+    // Konsistensi sedang dengan skor tinggi tetap bisa hire, tapi caution reasons akan muncul
     recommendation = 'hire';
   } else if (klaster.A >= 3.0 && klaster.B >= 3.0 && klaster.C >= 3.0 &&
              gateFailures.length === 0 && strongFlags.length < 2) {
