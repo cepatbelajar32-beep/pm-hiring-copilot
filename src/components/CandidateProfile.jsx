@@ -295,7 +295,7 @@ export default function CandidateProfile({ candidate, onBack, onRefresh }) {
                 <tbody>
                   {evals.map(e => (
                     <tr key={e.id}>
-                      <td style={{ fontFamily:'DM Mono,monospace', fontSize:13, color:'#2E75B6', fontWeight:700 }}>{e.uc_id}</td>
+                      <td><UCTooltip ucId={e.uc_id} /></td>
                       <td><span className={`badge-s${e.stage}`}>Stage {e.stage}</span></td>
                       <td><ScoreBadge score={e.ai_score} /></td>
                       <td>{e.is_confirmed ? <ScoreBadge score={e.final_score} /> : <span className="draft-pill">Draft</span>}</td>

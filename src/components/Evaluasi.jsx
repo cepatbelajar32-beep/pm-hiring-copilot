@@ -393,7 +393,7 @@ function PersiapanPanel({ candidate, batch, evals, script, onScriptGenerated, on
                 <div key={q.uc_id} style={{ padding:'12px 14px', border:'1px solid #E5E7EB', borderRadius:10,
                   marginBottom:10, borderLeft:'4px solid #2E75B6', background:'#FAFAFA' }}>
                   <div style={{ display:'flex', gap:8, alignItems:'center', marginBottom:6 }}>
-                    <span className="uc-code">{q.uc_id}</span>
+                    <UCTooltip ucId={q.uc_id} />
                     <span style={{ fontSize:14, fontWeight:700 }}>{uc?.title || ''}</span>
                   </div>
                   <div style={{ fontSize:14, color:'#2E75B6', fontStyle:'italic' }}>Probe: {q.custom_probe}</div>
@@ -669,7 +669,7 @@ function AnalisisAkhir({ candidate, answers, evals, savedConsistency, onConsiste
           <div key={e.id} style={{ padding:'10px 14px', background:'#FBF3D5', border:'1px solid #BF8F00',
             borderLeft:'3px solid #BF8F00', borderRadius:8, marginBottom:8, fontSize:13 }}>
             <div style={{ display:'flex', gap:8, alignItems:'center', marginBottom:4 }}>
-              <span style={{ fontFamily:'DM Mono,monospace', fontSize:11, color:'#2E75B6', background:'#EBF4FA', padding:'1px 6px', borderRadius:4, fontWeight:700 }}>{e.uc_id}</span>
+              <UCTooltip ucId={e.uc_id} />
               <span style={{ fontWeight:600, color:'#BF8F00' }}>
                 {e.authenticity_flag === 'possible_ai_generated' ? '🤖 Kemungkinan ditulis AI' :
                  e.authenticity_flag === 'possible_exaggeration' ? '📢 Kemungkinan dibesar-besarkan' :
@@ -690,7 +690,7 @@ function AnalisisAkhir({ candidate, answers, evals, savedConsistency, onConsiste
           <div key={e.id} style={{ padding:'10px 14px', background:'#EBF4FA', border:'1px solid #2E75B6',
             borderLeft:'3px solid #2E75B6', borderRadius:8, marginBottom:8, fontSize:13 }}>
             <div style={{ display:'flex', gap:8, alignItems:'center', marginBottom:4 }}>
-              <span style={{ fontFamily:'DM Mono,monospace', fontSize:11, color:'#2E75B6', background:'#EBF4FA', padding:'1px 6px', borderRadius:4, fontWeight:700 }}>{e.uc_id}</span>
+              <UCTooltip ucId={e.uc_id} />
               <span style={{ fontWeight:600, color:'#0C447C' }}>👥 Pola penggunaan "kami"</span>
             </div>
             <div style={{ color:'#374151', lineHeight:1.6 }}><TextWithUCTooltips text={e.individuality_note} /></div>
@@ -707,7 +707,7 @@ function AnalisisAkhir({ candidate, answers, evals, savedConsistency, onConsiste
           <div key={e.id} style={{ padding:'10px 14px', background:'#F9FAFB', border:'1px solid #E5E7EB',
             borderRadius:8, marginBottom:8, fontSize:13 }}>
             <div style={{ display:'flex', gap:8, alignItems:'center', marginBottom:4 }}>
-              <span style={{ fontFamily:'DM Mono,monospace', fontSize:11, color:'#2E75B6', background:'#EBF4FA', padding:'1px 6px', borderRadius:4, fontWeight:700 }}>{e.uc_id}</span>
+              <UCTooltip ucId={e.uc_id} />
               <span style={{ fontSize:11, color:'#9CA3AF' }}>Stage {e.stage} · {e.is_confirmed ? '✓ Dikonfirmasi' : 'Draft'}</span>
             </div>
             <div style={{ color:'#374151', lineHeight:1.6 }}>{e.reviewer_note}</div>

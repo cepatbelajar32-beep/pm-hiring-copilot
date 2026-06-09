@@ -2,6 +2,32 @@ import React, { useState } from 'react';
 import { BANK } from '../data/bank';
 
 // ── Data Kerangka Kompetensi ──────────────────────────
+// ── UCTooltip ─────────────────────────────────────────
+function UCTooltip({ ucId }) {
+  const [show, setShow] = useState(false);
+  const allUCs = [...BANK.stage1, ...BANK.stage2, ...BANK.stage3, ...BANK.stage4];
+  const uc = allUCs.find(u => u.id === ucId);
+  if (!ucId) return null;
+  return (
+    <span style={{ position:'relative', display:'inline-block' }}
+      onMouseEnter={() => setShow(true)} onMouseLeave={() => setShow(false)}>
+      <span style={{ fontFamily:'monospace', fontSize:11, fontWeight:700, color:'#185FA5',
+        background:'#E6F1FB', padding:'2px 6px', borderRadius:4, cursor:'default',
+        borderBottom:'1px dashed #2E75B6' }}>
+        {ucId}
+      </span>
+      {show && uc && (
+        <div style={{ position:'absolute', bottom:'100%', left:0, marginBottom:4, zIndex:100,
+          background:'#1F2937', color:'white', fontSize:12, padding:'5px 10px', borderRadius:6,
+          whiteSpace:'nowrap', pointerEvents:'none', boxShadow:'0 2px 8px rgba(0,0,0,0.3)' }}>
+          {uc.title}
+          <div style={{ color:'#9CA3AF', fontSize:11 }}>Klaster {uc.klaster}</div>
+        </div>
+      )}
+    </span>
+  );
+}
+
 const KLASTER = [
   {
     id: 'A', label: 'Cognitive Core', tag: 'PEMBEDA UTAMA',

@@ -2,6 +2,32 @@
 import React, { useState } from 'react';
 import { BANK, ACTIVE_INDEX } from '../data/bank';
 
+// ── UCTooltip ─────────────────────────────────────────
+function UCTooltip({ ucId }) {
+  const [show, setShow] = useState(false);
+  const allUCs = [...BANK.stage1, ...BANK.stage2, ...BANK.stage3, ...BANK.stage4];
+  const uc = allUCs.find(u => u.id === ucId);
+  if (!ucId) return null;
+  return (
+    <span style={{ position:'relative', display:'inline-block' }}
+      onMouseEnter={() => setShow(true)} onMouseLeave={() => setShow(false)}>
+      <span style={{ fontFamily:'monospace', fontSize:11, fontWeight:700, color:'#185FA5',
+        background:'#E6F1FB', padding:'2px 6px', borderRadius:4, cursor:'default',
+        borderBottom:'1px dashed #2E75B6' }}>
+        {ucId}
+      </span>
+      {show && uc && (
+        <div style={{ position:'absolute', bottom:'100%', left:0, marginBottom:4, zIndex:100,
+          background:'#1F2937', color:'white', fontSize:12, padding:'5px 10px', borderRadius:6,
+          whiteSpace:'nowrap', pointerEvents:'none', boxShadow:'0 2px 8px rgba(0,0,0,0.3)' }}>
+          {uc.title}
+          <div style={{ color:'#9CA3AF', fontSize:11 }}>Klaster {uc.klaster}</div>
+        </div>
+      )}
+    </span>
+  );
+}
+
 const STAGE_LABELS = { 1: 'Stage 1 — Aplikasi', 2: 'Stage 2 — Penilaian Situasi & Logika', 3: 'Stage 3 — Case Study', 4: 'Stage 4 — Panel' };
 const STAGE_ACTIVE = { 1: 5, 2: 7, 3: '1 + refleksi', 4: 7 };
 
@@ -71,7 +97,7 @@ export default function BankSoal() {
             onClick={() => setExpandedUC(isExpanded ? null : uc.id)}
           >
             <div className="uc-header">
-              <span className="uc-code">{uc.id}</span>
+              <UCTooltip ucId={uc.id} />
               <span className="uc-title">{uc.title}</span>
               <span className="badge badge-blue" style={{ marginLeft: 4 }}>Klaster {uc.klaster}</span>
               {uc.mechanism && <span className="badge badge-purple">{uc.mechanism}</span>}
