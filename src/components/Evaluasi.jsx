@@ -136,6 +136,40 @@ function UCCard({ uc, stage, candidateId, existingAnswer, existingEval, onEvalSa
     finally { setSavingDraft(false); }
   }
 
+  async function handleReEvaluate() {
+    if (!answer.trim()) return;
+    setLoading(true);
+    onAIStart && onAIStart();
+    try {
+      const result = await evaluateAnswer(uc, answer);
+      // Update hanya flag fields di DB — tidak ubah skor final
+      const { supabase } = await import('../lib/supabase');
+      await supabase.from('evaluations').update({
+        authenticity_flag: result.authenticity_flag || null,
+        authenticity_note: result.authenticity_note || null,
+        individuality_note: result.individuality_note || null,
+        ai_reasoning: result.reasoning,
+        ai_evidence: result.evidence,
+        ai_direction: result.direction,
+        ai_flag: result.flag,
+      })
+      .eq('candidate_id', candidateId)
+      .eq('uc_id', uc.id);
+
+      // Update local state
+      setAiDraft(prev => ({
+        ...prev,
+        authenticity_flag: result.authenticity_flag,
+        authenticity_note: result.authenticity_note,
+        individuality_note: result.individuality_note,
+        ai_reasoning: result.reasoning,
+        ai_evidence: result.evidence,
+      }));
+      onEvalSaved && onEvalSaved();
+    } catch(e) { alert('Re-evaluasi gagal: ' + e.message); }
+    finally { setLoading(false); onAIDone && onAIDone(); }
+  }
+
   async function handleConfirm() {
     if (!aiDraft) return;
     const scoreToSave = overrideScore || aiDraft.ai_score || aiDraft.score;
@@ -270,9 +304,21 @@ function UCCard({ uc, stage, candidateId, existingAnswer, existingEval, onEvalSa
             </div>
           )}
 
-          {confirmed && aiDraft.reviewer_note && (
-            <div style={{ marginTop:12, padding:'10px 14px', background:'#E2EFDA', borderRadius:8, fontSize:14, color:'#374151' }}>
-              <strong style={{ color:'#548235' }}>Catatan penilai:</strong> {aiDraft.reviewer_note}
+          {confirmed && (
+            <div style={{ marginTop:12, display:'flex', gap:10, alignItems:'center', flexWrap:'wrap' }}>
+              {aiDraft.reviewer_note && (
+                <div style={{ flex:1, padding:'10px 14px', background:'#E2EFDA', borderRadius:8, fontSize:14, color:'#374151' }}>
+                  <strong style={{ color:'#548235' }}>Catatan penilai:</strong> {aiDraft.reviewer_note}
+                </div>
+              )}
+              <button
+                className="btn btn-sm"
+                onClick={handleReEvaluate}
+                disabled={loading}
+                title="Update flag keaslian dan individuality dari AI — tidak mengubah skor final"
+                style={{ whiteSpace:'nowrap', fontSize:12, color:'#534AB7', borderColor:'#534AB7', background:'#EEEDFE' }}>
+                {loading ? <><div className="spinner"/>Memproses...</> : '🔄 Re-evaluasi AI'}
+              </button>
             </div>
           )}
         </div>
