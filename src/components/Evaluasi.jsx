@@ -8,6 +8,7 @@ import {
 } from '../lib/supabase';
 import { evaluateAnswer, generateInterviewScript, analyzeConsistency } from '../lib/claude';
 import { getActiveUCs, getActiveUCsFromBatch, BANK } from '../data/bank';
+import { calcRecommendation, RECOMMENDATION_CONFIG } from '../lib/recommendation';
 import { RadarChart, PolarGrid, PolarAngleAxis, Radar, ResponsiveContainer, Tooltip } from 'recharts';
 
 // ── Tooltip istilah IT ────────────────────────────────
@@ -507,6 +508,45 @@ function AnalisisAkhir({ candidate, answers, evals, savedConsistency, onConsiste
       {/* 1. Ringkasan Skor */}
       <SectionHeader title="Ringkasan Skor" skey="ringkasan" badge={`${evals.filter(e=>e.is_confirmed).length} UC dikonfirmasi`} />
       <SectionBody skey="ringkasan">
+        {/* Rekomendasi otomatis */}
+        {(() => {
+          const rec = calcRecommendation(evals, BANK, savedConsistency,
+            candidate?.direction);
+          const cfg = RECOMMENDATION_CONFIG[rec.recommendation];
+          return (
+            <div style={{ background:cfg.bg, border:`2px solid ${cfg.border}`,
+              borderRadius:10, padding:'14px 18px', marginBottom:16 }}>
+              <div style={{ display:'flex', alignItems:'center', gap:12, marginBottom:8 }}>
+                <span style={{ fontSize:18, fontWeight:800, color:cfg.color }}>{cfg.label}</span>
+                <span style={{ fontSize:13, color:cfg.color }}>{cfg.desc}</span>
+              </div>
+              <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr', gap:8 }}>
+                {rec.reasons[rec.recommendation].map((r,i) => (
+                  <div key={i} style={{ fontSize:12, color:cfg.color, display:'flex', gap:6 }}>
+                    <span style={{ flexShrink:0 }}>✓</span><span>{r}</span>
+                  </div>
+                ))}
+                {rec.reasons.no.filter((r,i) => rec.recommendation !== 'no' || i > 0).length === 0 && null}
+              </div>
+              {rec.gateFailures.length > 0 && (
+                <div style={{ marginTop:8, fontSize:12, color:'#C00000', fontWeight:600 }}>
+                  ⚠ Gerbang mati: {rec.gateFailures.join(', ')} — dapat di-override panel
+                </div>
+              )}
+              {(rec.reasons.no.length > 0 || rec.reasons.caution.length > 0) && rec.recommendation !== 'no' && (
+                <div style={{ marginTop:8, borderTop:`1px solid ${cfg.border}44`, paddingTop:8 }}>
+                  <div style={{ fontSize:11, color:cfg.color, fontWeight:600, marginBottom:4 }}>Catatan:</div>
+                  {[...rec.reasons.no, ...rec.reasons.caution].map((r,i) => (
+                    <div key={i} style={{ fontSize:12, color:'#633806', display:'flex', gap:6 }}>
+                      <span style={{ flexShrink:0 }}>△</span><span>{r}</span>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+          );
+        })()}
+
         <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr', gap:16 }}>
           {/* Radar */}
           <div>

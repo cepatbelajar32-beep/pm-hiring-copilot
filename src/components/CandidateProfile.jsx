@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { RadarChart, PolarGrid, PolarAngleAxis, Radar, ResponsiveContainer, Tooltip } from 'recharts';
 import { getEvaluations, getProfile, saveProfile, updateFinalDecision } from '../lib/supabase';
+import { calcRecommendation, RECOMMENDATION_CONFIG } from '../lib/recommendation';
 import { generateCandidateProfile } from '../lib/claude';
 import { DirectionBadge, ScoreBadge, Avatar, Spinner, Alert } from './Shared';
 import { BANK } from '../data/bank';
@@ -132,7 +133,9 @@ export default function CandidateProfile({ candidate, onBack, onRefresh }) {
     { subject: 'Foundational (D)',   value: safeNum(klasterD.toFixed(1)), fullMark: 5 },
   ];
 
-  const matrix = MATRIX[profile?.matrix_position];
+  // Rekomendasi dari logika terpusat — bukan dari AI
+  const autoRec = calcRecommendation(evals, BANK, null, candidate?.direction);
+  const matrix = RECOMMENDATION_CONFIG[autoRec.recommendation];
 
   return (
     <div>
@@ -214,15 +217,49 @@ export default function CandidateProfile({ candidate, onBack, onRefresh }) {
                 )}
               </div>
 
-              {matrix && (
-                <div className="card" style={{ marginBottom: 14 }}>
-                  <div className="card-title">Rekomendasi AI</div>
-                  <div className={`matrix-cell ${matrix.cls}`} style={{ marginBottom: 10 }}>{matrix.label}</div>
-                  {profile.ai_recommendation_note && (
-                    <div style={{ fontSize: 14, color: '#4B5563', lineHeight: 1.6 }}><TextWithUCTooltips text={profile.ai_recommendation_note} /></div>
-                  )}
+              <div className="card" style={{ marginBottom: 14 }}>
+                <div className="card-title">Rekomendasi Sistem</div>
+                <div style={{ background: matrix.bg, border: `2px solid ${matrix.border}`,
+                  borderRadius: 10, padding: '12px 16px', marginBottom: 10 }}>
+                  <div style={{ fontSize: 16, fontWeight: 800, color: matrix.color, marginBottom: 4 }}>
+                    {matrix.label}
+                  </div>
+                  <div style={{ fontSize: 13, color: matrix.color }}>{matrix.desc}</div>
                 </div>
-              )}
+                {/* Alasan rekomendasi */}
+                {autoRec.reasons[autoRec.recommendation].length > 0 && (
+                  <div style={{ marginBottom: 8 }}>
+                    {autoRec.reasons[autoRec.recommendation].map((r,i) => (
+                      <div key={i} style={{ fontSize: 12, color: '#374151', display:'flex', gap:6, marginBottom:4 }}>
+                        <span style={{ color: matrix.color, flexShrink:0 }}>✓</span><span>{r}</span>
+                      </div>
+                    ))}
+                  </div>
+                )}
+                {/* Warning tambahan */}
+                {[...autoRec.reasons.caution, ...autoRec.reasons.no].length > 0 &&
+                  autoRec.recommendation !== 'no' && (
+                  <div style={{ background:'#FBF3D5', borderRadius:8, padding:'8px 12px', marginBottom:8 }}>
+                    {[...autoRec.reasons.caution, ...autoRec.reasons.no].map((r,i) => (
+                      <div key={i} style={{ fontSize:12, color:'#633806', display:'flex', gap:6, marginBottom:3 }}>
+                        <span style={{ flexShrink:0 }}>△</span><span>{r}</span>
+                      </div>
+                    ))}
+                  </div>
+                )}
+                {autoRec.gateFailures.length > 0 && (
+                  <div style={{ fontSize:12, color:'#C00000', fontWeight:600, marginBottom:8 }}>
+                    ⚠ Gerbang mati: {autoRec.gateFailures.join(', ')} — dapat di-override panel
+                  </div>
+                )}
+                {profile?.ai_recommendation_note && (
+                  <div style={{ fontSize: 13, color: '#6B7280', fontStyle:'italic',
+                    borderTop:'1px solid #E5E7EB', paddingTop:8, lineHeight:1.6 }}>
+                    <strong style={{ fontStyle:'normal', color:'#374151' }}>Narasi AI:</strong>{' '}
+                    <TextWithUCTooltips text={profile.ai_recommendation_note} />
+                  </div>
+                )}
+              </div>
 
               {/* Override keputusan penilai */}
               <div className="card" style={{ marginBottom: 14, border: overrideDecision ? '2px solid #548235' : '1px solid #E5E7EB' }}>
