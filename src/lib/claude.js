@@ -3,7 +3,7 @@
 
 const BLACKBOX_URL = 'https://api.blackbox.ai/chat/completions';
 const BLACKBOX_KEY = 'sk-PKD-A21l0vJrAwQBshBPNQ';
-const MODEL = 'blackboxai/anthropic/claude-sonnet-4.5';
+const MODEL = 'blackboxai/anthropic/claude-sonnet-4.6';
 
 async function callClaude(systemPrompt, userContent, maxTokens = 1200) {
   const res = await fetch(BLACKBOX_URL, {
