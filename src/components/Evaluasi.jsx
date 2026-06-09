@@ -533,11 +533,22 @@ function AnalisisAkhir({ candidate, answers, evals, savedConsistency, onConsiste
                   ⚠ Gerbang mati: {rec.gateFailures.join(', ')} — dapat di-override panel
                 </div>
               )}
-              {(rec.reasons.no.length > 0 || rec.reasons.caution.length > 0) && rec.recommendation !== 'no' && (
+              {/* Catatan tambahan — hanya tampil kalau ada reasons dari kategori LEBIH TINGGI yang perlu diperhatikan */}
+              {rec.recommendation === 'hire' && (rec.reasons.caution.length > 0 || rec.reasons.no.length > 0) && (
                 <div style={{ marginTop:8, borderTop:`1px solid ${cfg.border}44`, paddingTop:8 }}>
-                  <div style={{ fontSize:11, color:cfg.color, fontWeight:600, marginBottom:4 }}>Catatan:</div>
-                  {[...rec.reasons.no, ...rec.reasons.caution].map((r,i) => (
+                  <div style={{ fontSize:11, color:'#633806', fontWeight:600, marginBottom:4 }}>Perlu diperhatikan:</div>
+                  {[...rec.reasons.caution, ...rec.reasons.no].map((r,i) => (
                     <div key={i} style={{ fontSize:12, color:'#633806', display:'flex', gap:6 }}>
+                      <span style={{ flexShrink:0 }}>△</span><span>{r}</span>
+                    </div>
+                  ))}
+                </div>
+              )}
+              {rec.recommendation === 'hire_with_dev' && rec.reasons.no.length > 0 && (
+                <div style={{ marginTop:8, borderTop:`1px solid ${cfg.border}44`, paddingTop:8 }}>
+                  <div style={{ fontSize:11, color:'#C00000', fontWeight:600, marginBottom:4 }}>Perlu diperhatikan:</div>
+                  {rec.reasons.no.map((r,i) => (
+                    <div key={i} style={{ fontSize:12, color:'#C00000', display:'flex', gap:6 }}>
                       <span style={{ flexShrink:0 }}>△</span><span>{r}</span>
                     </div>
                   ))}

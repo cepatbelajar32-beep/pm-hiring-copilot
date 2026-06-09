@@ -241,12 +241,22 @@ export default function CandidateProfile({ candidate, onBack, onRefresh }) {
                     ))}
                   </div>
                 )}
-                {/* Warning tambahan */}
-                {[...autoRec.reasons.caution, ...autoRec.reasons.no].length > 0 &&
-                  autoRec.recommendation !== 'no' && (
+                {/* Warning tambahan — hanya tampil kalau recommendations lebih baik tapi ada hal yang perlu diperhatikan */}
+                {autoRec.recommendation === 'hire' && (autoRec.reasons.caution.length > 0 || autoRec.reasons.no.length > 0) && (
                   <div style={{ background:'#FBF3D5', borderRadius:8, padding:'8px 12px', marginBottom:8 }}>
+                    <div style={{ fontSize:11, color:'#633806', fontWeight:600, marginBottom:4 }}>Perlu diperhatikan:</div>
                     {[...autoRec.reasons.caution, ...autoRec.reasons.no].map((r,i) => (
                       <div key={i} style={{ fontSize:12, color:'#633806', display:'flex', gap:6, marginBottom:3 }}>
+                        <span style={{ flexShrink:0 }}>△</span><span>{r}</span>
+                      </div>
+                    ))}
+                  </div>
+                )}
+                {autoRec.recommendation === 'hire_with_dev' && autoRec.reasons.no.length > 0 && (
+                  <div style={{ background:'#FBE4E4', borderRadius:8, padding:'8px 12px', marginBottom:8 }}>
+                    <div style={{ fontSize:11, color:'#C00000', fontWeight:600, marginBottom:4 }}>Perlu diperhatikan:</div>
+                    {autoRec.reasons.no.map((r,i) => (
+                      <div key={i} style={{ fontSize:12, color:'#C00000', display:'flex', gap:6, marginBottom:3 }}>
                         <span style={{ flexShrink:0 }}>△</span><span>{r}</span>
                       </div>
                     ))}
