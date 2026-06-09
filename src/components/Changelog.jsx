@@ -2,8 +2,64 @@ import React, { useState } from 'react';
 
 const VERSIONS = [
   {
-    version: 'v1.6.0',
+    version: 'v2.0.0',
     label: 'Terbaru',
+    status: 'deployed',
+    title: 'Logika Rekomendasi Hire Terpusat',
+    date: '6 Jun 2025',
+    items: [
+      { type: 'new', text: 'File recommendation.js — logika rekomendasi hire/no hire terpusat berdasarkan kriteria: Klaster A&B ≥4.0 (Hire), 3.0-3.9 (Hire+Dev), <2.5 (No); Klaster C <3.0 = Hati-hati; Klaster D skor 1 di gerbang mati = No (bisa override panel); konsistensi rendah + kontradiksi = Hati-hati; 3+ flag keaslian kuat = No; 5+ possible_ai_generated = Hati-hati; product_lean = Hati-hati.' },
+      { type: 'new', text: 'Rekomendasi otomatis di Analisis Akhir — muncul di atas Ringkasan Skor dengan label, deskripsi, alasan per kriteria, dan catatan "Perlu diperhatikan" kalau ada hal yang perlu diverifikasi panel.' },
+      { type: 'new', text: 'Profil Kandidat pakai logika rekomendasi terpusat — tidak lagi bergantung pada matrix_position dari AI. Narasi AI tetap tampil sebagai konteks.' },
+      { type: 'fix', text: 'Nilai klaster di Profil Kandidat sekarang dihitung langsung dari evals (sama dengan Analisis Akhir) — bukan dari klaster_x yang disimpan AI. Profil lama otomatis benar tanpa perlu regenerate.' },
+      { type: 'fix', text: 'Konsistensi dan pola individuality sekarang diperhitungkan di rekomendasi — sedang + kontradiksi = caution reason, individuality_pattern terdeteksi = caution reason.' },
+      { type: 'fix', text: 'Profil Kandidat sekarang load consistencyResult dari Supabase saat dibuka — sebelumnya selalu null sehingga konsistensi tidak diperhitungkan.' },
+      { type: 'fix', text: 'Duplikasi alasan rekomendasi dihapus — sebelumnya reasons caution muncul dua kali (sebagai main reasons dan sebagai catatan).' },
+    ]
+  },
+  {
+    version: 'v1.9.0',
+    label: '',
+    status: 'deployed',
+    title: 'Generate Script Stage 4 Diperbaiki + Klaster Seragam',
+    date: '6 Jun 2025',
+    items: [
+      { type: 'fix', text: 'Generate Script Stage 4 sekarang inject daftar UC yang sudah dikerjakan di Stage 1-3 ke sistem prompt — UC_4_2 hanya dipilih kalau UC_1_1 sudah dikerjakan, UC_4_3 hanya kalau Stage 3 ada. Probe harus merujuk ke jawaban konkret, bukan topik baru.' },
+      { type: 'fix', text: 'Evaluasi summary di Generate Script diperkaya dengan reasoning, authenticity_flag, dan individuality_note — AI punya konteks lebih lengkap untuk personalisasi probe.' },
+      { type: 'fix', text: 'App.js: selectedCandidate otomatis diupdate setelah loadData — Dashboard dan badge kandidat langsung fresh setelah keputusan disimpan.' },
+      { type: 'fix', text: 'CandidateProfile: onRefresh={loadData} ditambahkan — sebelumnya undefined sehingga Dashboard tidak ter-refresh setelah simpan keputusan.' },
+    ]
+  },
+  {
+    version: 'v1.8.0',
+    label: '',
+    status: 'deployed',
+    title: 'Tombol Re-evaluasi AI + Fix Flag Keaslian',
+    date: '6 Jun 2025',
+    items: [
+      { type: 'new', text: 'Tombol Re-evaluasi AI di UC yang sudah dikonfirmasi — update authenticity_flag, authenticity_note, dan individuality_note tanpa mengubah skor final. Diperlukan untuk UC yang dievaluasi sebelum kolom baru ditambahkan.' },
+      { type: 'fix', text: 'authenticity_flag, authenticity_note, dan individuality_note sekarang tersimpan ke Supabase saat evaluasi — sebelumnya tidak disimpan sama sekali sehingga Analisis Akhir tidak bisa menampilkan flag.' },
+      { type: 'fix', text: 'SQL migration: ALTER TABLE evaluations ADD COLUMN authenticity_flag text, authenticity_note text, individuality_note text.' },
+    ]
+  },
+  {
+    version: 'v1.7.0',
+    label: '',
+    status: 'deployed',
+    title: 'UCTooltip Semua Komponen + Fix Berbagai Bug',
+    date: '6 Jun 2025',
+    items: [
+      { type: 'new', text: 'UCTooltip dipasang di semua komponen — BankSoal, Referensi, Dashboard (modal UC batch), CandidateProfile (tabel evaluasi), Evaluasi (Persiapan Panel, Keaslian, Individuality, Catatan Penilai). Hover di UC_X_Y manapun menampilkan judul dan klaster.' },
+      { type: 'fix', text: 'Keputusan panel dikunci setelah disimpan — tombol pilihan dan simpan di-disable, tidak bisa diubah lagi.' },
+      { type: 'fix', text: 'Naturalisasi deskripsi pilihan Stage 2 — 9 UC Stage 2 pilihan 1 dan 2 diubah dari ringkasan kaku menjadi kalimat penuh yang natural untuk kandidat.' },
+      { type: 'fix', text: 'Syntax error bank.js — kutip ganda di dalam string field cari/waspadai diganti kutip tunggal.' },
+      { type: 'fix', text: 'Lock navigasi tab saat AI memproses — banner kuning + tab disabled mencegah user pindah tab saat evaluasi/generate/review sedang berjalan.' },
+      { type: 'fix', text: 'Script generate tersimpan ke DB dan di-load saat mount — tidak perlu generate ulang setelah pindah tab atau refresh.' },
+    ]
+  },
+  {
+    version: 'v1.6.0',
+    label: '',
     status: 'deployed',
     title: 'Naturalisasi Bank Soal + Tooltip UC + Metrik Dashboard',
     date: '5 Jun 2025',
@@ -252,7 +308,7 @@ const PRINSIP = [
 ];
 
 export default function Changelog() {
-  const [expanded, setExpanded] = useState(new Set(['v1.6.0']));
+  const [expanded, setExpanded] = useState(new Set(['v2.0.0']));
 
   function toggle(v) {
     setExpanded(prev => {
